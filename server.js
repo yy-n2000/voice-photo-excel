@@ -10,22 +10,26 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
-// ===== Excel单位换算 =====
-const colWidthToPx = (width) => width * 7;       // 列宽 → 像素（近似）
-const rowHeightToPx = (height) => height * 1.33; // 行高 → 像素
+// ===== 单位换算 =====
+const colWidthToPx = (width) => width * 7;
+const rowHeightToPx = (height) => height * 1.33;
 
-// 留白（像素）
+// 留白
 const PADDING = 8;
 
 app.post('/generate-excel', async (req, res) => {
   try {
     const { rows } = req.body;
 
+    if (!rows || !Array.isArray(rows)) {
+      return res.status(400).json({ error: 'rows 数据格式错误' });
+    }
+
     const workbook  = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('记录');
 
     // ===== 列宽 =====
-    worksheet.getColumn(1).width = 35; // 文本
+    worksheet.getColumn(1).width = 35;
     worksheet.getColumn(2).width = 22;
     worksheet.getColumn(3).width = 22;
     worksheet.getColumn(4).width = 22;
@@ -44,7 +48,7 @@ app.post('/generate-excel', async (req, res) => {
       const rowIndex = i + 2;
 
       const excelRow = worksheet.getRow(rowIndex);
-      excelRow.height = 90; // ≈120px
+      excelRow.height = 90;
 
       // ===== 文本 =====
       const textCell = worksheet.getCell(rowIndex, 1);
@@ -52,60 +56,79 @@ app.post('/generate-excel', async (req, res) => {
       textCell.alignment = { vertical: 'middle', wrapText: true };
       textCell.font = { size: 11 };
 
-      // ===== 图片 =====
-      if (rowData.images && rowData.images.length > 0) {
+      // ===== 图片处理 =====
+      if (Array.isArray(rowData.images)) {
         for (let j = 0; j < Math.min(rowData.images.length, 3); j++) {
-          const base64Raw = rowData.images[j];
-          const base64    = base64Raw.replace(/^data:image\/\w+;base64,/, '');
-          const ext       = base64Raw.startsWith('data:image/png') ? 'png' : 'jpeg';
-          const col       = j + 2;
+          try {
+            const base64Raw = rowData.images[j];
+            if (!base64Raw || typeof base64Raw !== 'string') continue;
 
-          const imageId = workbook.addImage({
-            base64,
-            extension: ext
-          });
+            // ===== 校验base64 =====
+            const match = base64Raw.match(/^data:image\/(\w+);base64,/);
+            if (!match) {
+              console.warn(`第${rowIndex}行图片格式非法`);
+              continue;
+            }
 
-          // ===== 获取图片原始尺寸 =====
-          const buffer = Buffer.from(base64, 'base64');
-          const { width: imgW, height: imgH } = sizeOf(buffer);
+            const ext = match[1] === 'png' ? 'png' : 'jpeg';
+            const base64 = base64Raw.replace(/^data:image\/\w+;base64,/, '');
 
-          // ===== 单元格尺寸 =====
-          const colWidth  = worksheet.getColumn(col).width || 20;
-          const rowHeight = excelRow.height || 80;
+            const col = j + 2;
 
-          const cellW = colWidthToPx(colWidth);
-          const cellH = rowHeightToPx(rowHeight);
+            const imageId = workbook.addImage({
+              base64,
+              extension: ext
+            });
 
-          // ===== 可用区域（扣掉留白）=====
-          const maxW = cellW - PADDING * 2;
-          const maxH = cellH - PADDING * 2;
+            // ===== 获取图片尺寸 =====
+            let imgW = 100;
+            let imgH = 100;
 
-          // ===== 等比例缩放 =====
-          const ratio = Math.min(maxW / imgW, maxH / imgH, 1); // 不放大
+            try {
+              const buffer = Buffer.from(base64, 'base64');
+              const size   = sizeOf(buffer);
+              imgW = size.width;
+              imgH = size.height;
+            } catch (e) {
+              console.warn(`第${rowIndex}行图片尺寸解析失败`);
+            }
 
-          const finalW = imgW * ratio;
-          const finalH = imgH * ratio;
+            // ===== 单元格尺寸 =====
+            const colWidth  = worksheet.getColumn(col).width || 20;
+            const rowHeight = excelRow.height || 80;
 
-          // ===== 居中偏移 =====
-          const offsetX = (cellW - finalW) / 2;
-          const offsetY = (cellH - finalH) / 2;
+            const cellW = colWidthToPx(colWidth);
+            const cellH = rowHeightToPx(rowHeight);
 
-          // ===== 转换为Excel坐标比例 =====
-          const colOffset = offsetX / cellW;
-          const rowOffset = offsetY / cellH;
+            // ===== 计算缩放 =====
+            const maxW = cellW - PADDING * 2;
+            const maxH = cellH - PADDING * 2;
 
-          // ===== 插入图片 =====
-          worksheet.addImage(imageId, {
-            tl: {
-              col: col - 1 + colOffset,
-              row: rowIndex - 1 + rowOffset
-            },
-            ext: {
-              width: finalW,
-              height: finalH
-            },
-            editAs: 'oneCell'
-          });
+            const ratio = Math.min(maxW / imgW, maxH / imgH, 1);
+
+            const finalW = imgW * ratio;
+            const finalH = imgH * ratio;
+
+            // ===== 居中 =====
+            const offsetX = (cellW - finalW) / 2;
+            const offsetY = (cellH - finalH) / 2;
+
+            worksheet.addImage(imageId, {
+              tl: {
+                col: col - 1 + offsetX / cellW,
+                row: rowIndex - 1 + offsetY / cellH
+              },
+              ext: {
+                width: finalW,
+                height: finalH
+              },
+              editAs: 'oneCell'
+            });
+
+          } catch (imgErr) {
+            // 单张图片失败不影响整体
+            console.error(`第${rowIndex}行图片插入失败`, imgErr);
+          }
         }
       }
     }
@@ -125,7 +148,7 @@ app.post('/generate-excel', async (req, res) => {
     res.send(buffer);
 
   } catch (err) {
-    console.error(err);
+    console.error('导出失败：', err);
     res.status(500).json({ error: err.message });
   }
 });
