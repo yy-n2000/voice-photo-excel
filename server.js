@@ -56,7 +56,7 @@ app.post('/generate-excel', async (req, res) => {
           // 留0.08的内边距让图片不贴边
           worksheet.addImage(imageId, {
             tl: { col: col - 1 + 0.08, row: rowIndex - 1 + 0.08 },
-            br: { col: col - 1 + 0.92, row: rowIndex - 1 + 0.92 },
+            br: { col: col  + 0.92, row: rowIndex  + 0.92 },
             editAs: 'oneCell'
           });
         }
