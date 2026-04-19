@@ -18,182 +18,116 @@
       text-align: center;
     }
     .header h1 { font-size: 20px; margin-bottom: 4px; }
-    .header p { font-size: 13px; opacity: 0.85; }
+    .header p  { font-size: 13px; opacity: 0.85; }
     .container { padding: 16px; max-width: 600px; margin: 0 auto; }
 
     .input-card {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 16px;
+      background: white; border-radius: 16px;
+      padding: 20px; margin-bottom: 16px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     }
     .input-card h2 { font-size: 15px; color: #333; margin-bottom: 16px; }
 
     .voice-btn {
-      width: 100%;
-      height: 64px;
-      border-radius: 32px;
-      border: none;
+      width: 100%; height: 64px; border-radius: 32px; border: none;
       background: linear-gradient(135deg, #4472C4, #2d5aa0);
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.2s;
+      color: white; font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.2s;
       -webkit-tap-highlight-color: transparent;
       margin-bottom: 8px;
     }
-    .voice-btn.recording {
-      background: linear-gradient(135deg, #e74c3c, #c0392b);
-    }
-    .voice-btn.processing {
-      background: linear-gradient(135deg, #f39c12, #e67e22);
-      pointer-events: none;
-    }
-    .wave-bars {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      height: 24px;
-    }
-    .wave-bar {
-      width: 4px;
-      background: white;
-      border-radius: 2px;
-      animation: wave 0.8s ease-in-out infinite;
-    }
-    .wave-bar:nth-child(1) { animation-delay: 0.0s; }
-    .wave-bar:nth-child(2) { animation-delay: 0.1s; }
-    .wave-bar:nth-child(3) { animation-delay: 0.2s; }
-    .wave-bar:nth-child(4) { animation-delay: 0.3s; }
-    .wave-bar:nth-child(5) { animation-delay: 0.2s; }
-    .wave-bar:nth-child(6) { animation-delay: 0.1s; }
-    @keyframes wave {
-      0%, 100% { height: 4px; }
-      50% { height: 22px; }
-    }
-    .voice-status {
-      text-align: center;
-      font-size: 13px;
-      color: #aaa;
-      margin-bottom: 14px;
-      min-height: 18px;
-    }
-    .voice-status.recording { color: #e74c3c; font-weight: 500; }
-    .voice-status.processing { color: #f39c12; font-weight: 500; }
+    .voice-btn.recording  { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+    .voice-btn.processing { background: linear-gradient(135deg, #f39c12, #e67e22); pointer-events: none; }
+
+    .wave-bars { display: flex; align-items: center; gap: 3px; height: 24px; }
+    .wave-bar  { width: 4px; background: white; border-radius: 2px; animation: wave 0.8s ease-in-out infinite; }
+    .wave-bar:nth-child(1){animation-delay:0.0s}
+    .wave-bar:nth-child(2){animation-delay:0.1s}
+    .wave-bar:nth-child(3){animation-delay:0.2s}
+    .wave-bar:nth-child(4){animation-delay:0.3s}
+    .wave-bar:nth-child(5){animation-delay:0.2s}
+    .wave-bar:nth-child(6){animation-delay:0.1s}
+    @keyframes wave { 0%,100%{height:4px} 50%{height:22px} }
+
+    .voice-status { text-align:center; font-size:13px; color:#aaa; margin-bottom:14px; min-height:18px; }
+    .voice-status.recording  { color:#e74c3c; font-weight:500; }
+    .voice-status.processing { color:#f39c12; font-weight:500; }
 
     .text-display {
-      width: 100%;
-      min-height: 90px;
-      border: 1.5px solid #e0e0e0;
-      border-radius: 12px;
-      padding: 12px;
-      font-size: 15px;
-      color: #333;
-      background: #fafafa;
-      resize: vertical;
-      outline: none;
-      margin-bottom: 16px;
-      line-height: 1.6;
-      font-family: inherit;
+      width: 100%; min-height: 90px;
+      border: 1.5px solid #e0e0e0; border-radius: 12px;
+      padding: 12px; font-size: 15px; color: #333;
+      background: #fafafa; resize: vertical; outline: none;
+      margin-bottom: 16px; line-height: 1.6; font-family: inherit;
     }
     .text-display:focus { border-color: #4472C4; background: white; }
 
-    .photo-label { font-size: 14px; color: #666; margin-bottom: 10px; }
-    .photo-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-    .photo-item {
-      width: 90px; height: 90px;
-      border-radius: 12px; overflow: hidden; position: relative;
-    }
-    .photo-item img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-label { font-size:14px; color:#666; margin-bottom:10px; }
+    .photo-grid  { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+    .photo-item  { width:90px; height:90px; border-radius:12px; overflow:hidden; position:relative; }
+    .photo-item img { width:100%; height:100%; object-fit:cover; }
     .photo-item .remove-btn {
-      position: absolute; top: 4px; right: 4px;
-      width: 22px; height: 22px;
-      background: rgba(0,0,0,0.55); color: white;
-      border: none; border-radius: 50%; font-size: 14px;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      position:absolute; top:4px; right:4px;
+      width:22px; height:22px;
+      background:rgba(0,0,0,0.55); color:white;
+      border:none; border-radius:50%; font-size:14px;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
     }
     .add-photo-btn {
-      width: 90px; height: 90px;
-      border-radius: 12px; border: 2px dashed #c0c0c0;
-      background: #f8f8f8;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      cursor: pointer; color: #999; font-size: 12px; gap: 4px;
-      -webkit-tap-highlight-color: transparent;
+      width:90px; height:90px; border-radius:12px;
+      border:2px dashed #c0c0c0; background:#f8f8f8;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      cursor:pointer; color:#999; font-size:12px; gap:4px;
+      -webkit-tap-highlight-color:transparent;
     }
-    .add-photo-btn span:first-child { font-size: 28px; }
+    .add-photo-btn span:first-child { font-size:28px; }
 
     .add-row-btn {
-      width: 100%; height: 52px;
-      border-radius: 12px; border: none;
-      background: #27ae60; color: white;
-      font-size: 15px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      -webkit-tap-highlight-color: transparent;
+      width:100%; height:52px; border-radius:12px; border:none;
+      background:#27ae60; color:white; font-size:15px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; gap:6px;
+      -webkit-tap-highlight-color:transparent;
     }
-    .add-row-btn:active { background: #219a52; }
+    .add-row-btn:active { background:#219a52; }
 
     .records-card {
-      background: white; border-radius: 16px;
-      padding: 20px; margin-bottom: 16px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      background:white; border-radius:16px;
+      padding:20px; margin-bottom:16px;
+      box-shadow:0 2px 12px rgba(0,0,0,0.08);
     }
-    .records-header {
-      display: flex; justify-content: space-between;
-      align-items: center; margin-bottom: 14px;
-    }
-    .records-header h2 { font-size: 15px; color: #333; }
-    .record-count {
-      background: #4472C4; color: white;
-      border-radius: 12px; padding: 2px 10px; font-size: 13px;
-    }
-    .record-item {
-      border: 1px solid #eee; border-radius: 12px;
-      padding: 12px; margin-bottom: 10px; background: #fafafa;
-    }
-    .record-item-header {
-      display: flex; justify-content: space-between;
-      align-items: center; margin-bottom: 6px;
-    }
-    .row-num { font-size: 12px; color: #999; }
-    .delete-row-btn {
-      border: none; background: none;
-      color: #e74c3c; font-size: 13px; cursor: pointer; padding: 2px 6px;
-    }
-    .record-text { font-size: 14px; color: #333; margin-bottom: 8px; line-height: 1.5; }
-    .record-images { display: flex; gap: 8px; flex-wrap: wrap; }
-    .record-images img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; }
-    .empty-tip { text-align: center; color: #bbb; font-size: 14px; padding: 20px 0; }
+    .records-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .records-header h2 { font-size:15px; color:#333; }
+    .record-count { background:#4472C4; color:white; border-radius:12px; padding:2px 10px; font-size:13px; }
+    .record-item { border:1px solid #eee; border-radius:12px; padding:12px; margin-bottom:10px; background:#fafafa; }
+    .record-item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .row-num { font-size:12px; color:#999; }
+    .delete-row-btn { border:none; background:none; color:#e74c3c; font-size:13px; cursor:pointer; padding:2px 6px; }
+    .record-text { font-size:14px; color:#333; margin-bottom:8px; line-height:1.5; }
+    .record-images { display:flex; gap:8px; flex-wrap:wrap; }
+    .record-images img { width:56px; height:56px; object-fit:cover; border-radius:8px; }
+    .empty-tip { text-align:center; color:#bbb; font-size:14px; padding:20px 0; }
 
     .export-btn {
-      width: 100%; height: 56px;
-      border-radius: 16px; border: none;
-      background: linear-gradient(135deg, #f39c12, #e67e22);
-      color: white; font-size: 17px; font-weight: 600;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      margin-bottom: 30px;
-      box-shadow: 0 4px 15px rgba(243,156,18,0.35);
-      -webkit-tap-highlight-color: transparent;
+      width:100%; height:56px; border-radius:16px; border:none;
+      background:linear-gradient(135deg,#f39c12,#e67e22);
+      color:white; font-size:17px; font-weight:600; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      margin-bottom:30px;
+      box-shadow:0 4px 15px rgba(243,156,18,0.35);
+      -webkit-tap-highlight-color:transparent;
     }
-    .export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .export-btn:not(:disabled):active { transform: scale(0.98); }
+    .export-btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .export-btn:not(:disabled):active { transform:scale(0.98); }
 
-    #fileInput { display: none; }
-
+    #fileInput { display:none; }
     .toast {
-      position: fixed; bottom: 30px; left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.75); color: white;
-      padding: 10px 22px; border-radius: 24px;
-      font-size: 14px; display: none; z-index: 999; white-space: nowrap;
+      position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+      background:rgba(0,0,0,0.75); color:white;
+      padding:10px 22px; border-radius:24px;
+      font-size:14px; display:none; z-index:999; white-space:nowrap;
     }
-    .toast.show { display: block; }
+    .toast.show { display:block; }
   </style>
 </head>
 <body>
@@ -221,8 +155,8 @@
         <span>＋</span><span>拍照/选图</span>
       </div>
     </div>
-    <input type="file" id="fileInput" accept="image/*" capture="environment"
-           multiple onchange="handleFileSelect(event)">
+    <input type="file" id="fileInput" accept="image/*"
+           capture="environment" multiple onchange="handleFileSelect(event)">
 
     <button class="add-row-btn" onclick="addRow()">
       ✅ 添加到记录列表
@@ -247,333 +181,473 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // ===== 讯飞配置 =====
-  const XF_APPID      = 'ed958adf';
-  const XF_API_KEY    = '21849580283bff759bb2a50f6ed0db2d';
-  const XF_API_SECRET = 'Yjk3ZDBkNmVkMmRjZWNjNTQ5MTEzYjEy';
+// ===================== 讯飞配置 =====================
+const XF_APPID      = 'ed958adf';
+const XF_API_KEY    = '21849580283bff759bb2a50f6ed0db2d';
+const XF_API_SECRET = 'Yjk3ZDBkNmVkMmRjZWNjNTQ5MTEzYjEy';
 
-  // ===== 全局状态 =====
-  let records       = [];
-  let currentImages = [];
-  let isRecording   = false;
-  let mediaRecorder = null;
-  let audioChunks   = [];
+// ===================== 全局状态 =====================
+let records       = [];
+let currentImages = [];
+let isRecording   = false;
+let mediaRecorder = null;
+let audioChunks   = [];
+let safetyTimer   = null;   // 全局保底定时器
 
-  // ===== 讯飞鉴权URL =====
-  async function getXFUrl() {
-    const host = 'iat-api.xfyun.cn';
-    const date = new Date().toUTCString();
-    const requestLine = 'GET /v2/iat HTTP/1.1';
-    const signOrigin = `host: ${host}\ndate: ${date}\n${requestLine}`;
-    const enc = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      'raw', enc.encode(XF_API_SECRET),
-      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-    );
-    const sig = await crypto.subtle.sign('HMAC', key, enc.encode(signOrigin));
-    const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
-    const authOrigin = `api_key="${XF_API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${sigB64}"`;
-    const auth = btoa(authOrigin);
-    return `wss://${host}/v2/iat?authorization=${encodeURIComponent(auth)}&date=${encodeURIComponent(date)}&host=${host}`;
-  }
+// ===================== 讯飞鉴权 =====================
+async function getXFUrl() {
+  const host = 'iat-api.xfyun.cn';
+  const date = new Date().toUTCString();
+  const requestLine = 'GET /v2/iat HTTP/1.1';
+  const signOrigin = `host: ${host}\ndate: ${date}\n${requestLine}`;
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', enc.encode(XF_API_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig    = await crypto.subtle.sign('HMAC', key, enc.encode(signOrigin));
+  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
+  const authOrigin = `api_key="${XF_API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${sigB64}"`;
+  const auth = btoa(authOrigin);
+  return `wss://${host}/v2/iat?authorization=${encodeURIComponent(auth)}&date=${encodeURIComponent(date)}&host=${host}`;
+}
 
-  // ===== 音频转16kHz PCM =====
-  async function convertToPCM(blob) {
-    const arrayBuffer = await blob.arrayBuffer();
-    const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    const pcm = audioBuffer.getChannelData(0);
-    const int16 = new Int16Array(pcm.length);
-    for (let i = 0; i < pcm.length; i++) {
-      int16[i] = Math.max(-32768, Math.min(32767, Math.round(pcm[i] * 32767)));
+// ===================== PCM转换 =====================
+// 用回调式 decodeAudioData，兼容所有浏览器
+function convertToPCM(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error('读取音频文件失败'));
+
+    reader.onload = (e) => {
+      const arrayBuffer = e.target.result;
+      let ctx;
+      try {
+        ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      } catch(err) {
+        return reject(new Error('AudioContext 初始化失败：' + err.message));
+      }
+
+      // 超时保护：8秒解码还没完就报错
+      const decodeTimeout = setTimeout(() => {
+        try { ctx.close(); } catch(_) {}
+        reject(new Error('音频解码超时'));
+      }, 8000);
+
+      // 用回调形式（而非Promise形式），兼容性更好
+      ctx.decodeAudioData(
+        arrayBuffer,
+        (audioBuffer) => {
+          clearTimeout(decodeTimeout);
+          try {
+            const pcm   = audioBuffer.getChannelData(0);
+            const int16 = new Int16Array(pcm.length);
+            for (let i = 0; i < pcm.length; i++) {
+              int16[i] = Math.max(-32768, Math.min(32767, Math.round(pcm[i] * 32767)));
+            }
+            ctx.close().catch(() => {});
+            resolve(new Blob([int16.buffer], { type: 'audio/L16' }));
+          } catch(err) {
+            reject(new Error('PCM转换失败：' + err.message));
+          }
+        },
+        (err) => {
+          clearTimeout(decodeTimeout);
+          try { ctx.close(); } catch(_) {}
+          // 解码失败时直接用原始blob发送，讯飞服务端也能处理webm
+          console.warn('decodeAudioData失败，将使用原始音频：', err);
+          resolve(blob);
+        }
+      );
+    };
+
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
+// ===================== 讯飞识别 =====================
+function recognizeAudio(audioBlob) {
+  return new Promise(async (resolve, reject) => {
+    let url;
+    try {
+      url = await getXFUrl();
+    } catch(err) {
+      return reject(new Error('鉴权失败：' + err.message));
     }
-    await ctx.close();
-    return new Blob([int16.buffer], { type: 'audio/L16' });
-  }
 
-  // ===== 讯飞识别 — 关键：segments数组管理，避免重复累加 =====
-  async function recognizeAudio(audioBlob) {
-    const url = await getXFUrl();
-    return new Promise(async (resolve, reject) => {
-      const ws = new WebSocket(url);
-      // segments[i] 存第i个分段的最新文字（rpl模式会覆盖）
-      const segments = [];
-      const pcmBlob  = await convertToPCM(audioBlob);
-      const pcmArray = new Uint8Array(await pcmBlob.arrayBuffer());
+    let pcmBlob;
+    try {
+      pcmBlob = await convertToPCM(audioBlob);
+    } catch(err) {
+      return reject(new Error('音频处理失败：' + err.message));
+    }
 
-      ws.onopen = () => {
-        const FRAME = 1280;
-        let offset = 0, idx = 0;
-        const send = () => {
-          if (offset >= pcmArray.length) {
-            // 结束帧
+    let pcmArray;
+    try {
+      pcmArray = new Uint8Array(await pcmBlob.arrayBuffer());
+    } catch(err) {
+      return reject(new Error('音频读取失败：' + err.message));
+    }
+
+    const segments = [];   // 每个分段的识别结果
+    let settled    = false;
+
+    const done = (text) => {
+      if (settled) return;
+      settled = true;
+      resolve(text);
+    };
+
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    };
+
+    let ws;
+    try {
+      ws = new WebSocket(url);
+    } catch(err) {
+      return fail(new Error('WebSocket创建失败：' + err.message));
+    }
+
+    // 60秒总超时
+    const wsTimeout = setTimeout(() => {
+      try { ws.close(); } catch(_) {}
+      done(segments.join(''));   // 超时返回已识别部分
+    }, 60000);
+
+    ws.onopen = () => {
+      const FRAME  = 1280;
+      let offset   = 0;
+      let frameIdx = 0;
+
+      const sendNext = () => {
+        if (settled) return;
+
+        if (offset >= pcmArray.length) {
+          // 发送结束帧
+          try {
             ws.send(JSON.stringify({
               data: { status: 2, format: 'audio/L16;rate=16000', encoding: 'raw', audio: '' }
             }));
-            return;
-          }
-          const chunk   = pcmArray.slice(offset, offset + FRAME);
-          const b64     = btoa(String.fromCharCode(...chunk));
-          const isFirst = idx === 0;
-          const frame   = {
-            ...(isFirst ? { common: { app_id: XF_APPID } } : {}),
-            ...(isFirst ? { business: {
-              language: 'zh_cn', domain: 'iat', accent: 'mandarin',
-              vad_eos: 5000, dwa: 'wpgs'
-            }} : {}),
-            data: {
-              status:   isFirst ? 0 : 1,
-              format:   'audio/L16;rate=16000',
-              encoding: 'raw',
-              audio:    b64
-            }
-          };
-          ws.send(JSON.stringify(frame));
-          offset += FRAME;
-          idx++;
-          setTimeout(send, 40);
-        };
-        send();
-      };
-
-      ws.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-
-        if (msg.code !== 0) {
-          ws.close();
-          reject(new Error(`讯飞错误(${msg.code}): ${msg.message}`));
+          } catch(_) {}
           return;
         }
 
-        if (msg.data?.result) {
-          const result = msg.data.result;
+        const chunk = pcmArray.slice(offset, offset + FRAME);
+        const b64   = btoa(String.fromCharCode(...chunk));
+        const isFirst = frameIdx === 0;
 
-          // 提取本次返回的文字
-          let text = '';
-          (result.ws || []).forEach(w => w.cw.forEach(c => { text += c.w; }));
-
-          const pgs = result.pgs;   // 'apd' 追加 | 'rpl' 替换
-          const rg  = result.rg;    // 替换范围 [start, end]（1-based）
-
-          if (pgs === 'rpl' && rg) {
-            // 替换 segments[rg[0]-1] 到 segments[rg[1]-1]
-            segments.splice(rg[0] - 1, rg[1] - rg[0] + 1, text);
-          } else {
-            // 追加一个新分段
-            segments.push(text);
+        const frame = {
+          ...(isFirst ? { common: { app_id: XF_APPID } } : {}),
+          ...(isFirst ? { business: {
+            language: 'zh_cn',
+            domain:   'iat',
+            accent:   'mandarin',
+            vad_eos:  5000,
+            dwa:      'wpgs'
+          }} : {}),
+          data: {
+            status:   isFirst ? 0 : 1,
+            format:   'audio/L16;rate=16000',
+            encoding: 'raw',
+            audio:    b64
           }
+        };
 
-          // 实时预览（合并所有分段）
-          document.getElementById('textDisplay').value = segments.join('');
-        }
-
-        if (msg.data?.status === 2) {
-          ws.close();
-          resolve(segments.join(''));
-        }
+        try { ws.send(JSON.stringify(frame)); } catch(_) { return; }
+        offset   += FRAME;
+        frameIdx += 1;
+        setTimeout(sendNext, 40);
       };
 
-      ws.onerror = () => reject(new Error('WebSocket 连接失败，请检查网络'));
-      // 超时保底
-      setTimeout(() => { ws.close(); resolve(segments.join('')); }, 60000);
-    });
-  }
+      sendNext();
+    };
 
-  // ===== 录音开始/停止 =====
-  async function toggleRecording() {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      await startRecording();
-    }
-  }
+    ws.onmessage = (e) => {
+      let msg;
+      try { msg = JSON.parse(e.data); } catch(_) { return; }
 
-  async function startRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mime = ['audio/webm;codecs=pcm','audio/webm','audio/ogg']
-                    .find(t => MediaRecorder.isTypeSupported(t)) || '';
-      mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
-      audioChunks   = [];
+      if (msg.code !== 0) {
+        clearTimeout(wsTimeout);
+        try { ws.close(); } catch(_) {}
+        fail(new Error(`讯飞错误(${msg.code}): ${msg.message}`));
+        return;
+      }
 
-      // ★ 开始录音时立即清空文本框
-      document.getElementById('textDisplay').value = '';
+      if (msg.data?.result) {
+        const result = msg.data.result;
 
-      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+        // 提取本帧文字
+        let text = '';
+        (result.ws || []).forEach(w => w.cw.forEach(c => { text += c.w; }));
 
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        setBtnProcessing();
-        try {
-          const blob   = new Blob(audioChunks, { type: mime || 'audio/webm' });
-          const result = await recognizeAudio(blob);
-          // ★ 识别完成后用最终结果覆盖（避免实时预览残留）
-          document.getElementById('textDisplay').value = result;
-          if (!result.trim()) showToast('未识别到内容，请重试');
-        } catch (err) {
-          showToast('识别失败：' + err.message);
-          console.error(err);
+        const pgs = result.pgs;  // 'apd'追加 | 'rpl'替换
+        const rg  = result.rg;   // 替换范围 [start,end]（1-based）
+
+        if (pgs === 'rpl' && Array.isArray(rg) && rg.length === 2) {
+          // 替换指定范围的分段
+          segments.splice(rg[0] - 1, rg[1] - rg[0] + 1, text);
+        } else {
+          // 追加新分段
+          segments.push(text);
         }
-        setBtnIdle();
-      };
 
-      mediaRecorder.start(100);
-      isRecording = true;
-      setBtnRecording();
+        // 实时预览
+        document.getElementById('textDisplay').value = segments.join('');
+      }
 
-    } catch (err) {
-      showToast(err.name === 'NotAllowedError' ? '请允许麦克风权限后重试' : '录音启动失败：' + err.message);
-    }
+      if (msg.data?.status === 2) {
+        clearTimeout(wsTimeout);
+        try { ws.close(); } catch(_) {}
+        done(segments.join(''));
+      }
+    };
+
+    ws.onerror = (e) => {
+      clearTimeout(wsTimeout);
+      fail(new Error('WebSocket连接失败，请检查网络'));
+    };
+
+    ws.onclose = () => {
+      clearTimeout(wsTimeout);
+      // 如果还没settled，说明意外关闭，返回已有结果
+      done(segments.join(''));
+    };
+  });
+}
+
+// ===================== 录音控制 =====================
+async function toggleRecording() {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    await startRecording();
   }
+}
 
-  function stopRecording() {
-    if (mediaRecorder && isRecording) {
-      isRecording = false;
-      mediaRecorder.stop();
-    }
-  }
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  // ===== 按钮状态管理 =====
-  function setBtnIdle() {
-    const btn = document.getElementById('voiceBtn');
-    btn.className = 'voice-btn';
-    btn.onclick = toggleRecording;
-    document.getElementById('voiceBtnInner').innerHTML = '🎤 点击开始录音';
-    const s = document.getElementById('voiceStatus');
-    s.textContent = '点击按钮开始说话，说完再次点击停止识别';
-    s.className = 'voice-status';
-  }
+    const mime = ['audio/webm;codecs=pcm', 'audio/webm', 'audio/ogg']
+                  .find(t => MediaRecorder.isTypeSupported(t)) || '';
 
-  function setBtnRecording() {
-    const btn = document.getElementById('voiceBtn');
-    btn.className = 'voice-btn recording';
-    document.getElementById('voiceBtnInner').innerHTML = `
-      <div class="wave-bars">
-        ${[1,2,3,4,5,6].map(()=>'<div class="wave-bar"></div>').join('')}
-      </div>
-      <span>录音中… 点击停止</span>`;
-    const s = document.getElementById('voiceStatus');
-    s.textContent = '🔴 正在录音，说完后点击按钮停止';
-    s.className = 'voice-status recording';
-  }
+    mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+    audioChunks   = [];
 
-  function setBtnProcessing() {
-    const btn = document.getElementById('voiceBtn');
-    btn.className = 'voice-btn processing';
-    document.getElementById('voiceBtnInner').innerHTML = '⏳ 识别中，请稍候…';
-    const s = document.getElementById('voiceStatus');
-    s.textContent = '正在识别，请稍候...';
-    s.className = 'voice-status processing';
-  }
-
-  // ===== 图片 =====
-  function addPhoto() {
-    if (currentImages.length >= 3) { showToast('最多添加3张图片'); return; }
-    document.getElementById('fileInput').click();
-  }
-
-  function handleFileSelect(e) {
-    for (const file of e.target.files) {
-      if (currentImages.length >= 3) break;
-      const reader = new FileReader();
-      reader.onload = ev => { currentImages.push(ev.target.result); renderPhotoGrid(); };
-      reader.readAsDataURL(file);
-    }
-    e.target.value = '';
-  }
-
-  function removePhoto(i) { currentImages.splice(i, 1); renderPhotoGrid(); }
-
-  function renderPhotoGrid() {
-    const grid = document.getElementById('photoGrid');
-    grid.innerHTML = '';
-    currentImages.forEach((src, i) => {
-      const d = document.createElement('div');
-      d.className = 'photo-item';
-      d.innerHTML = `<img src="${src}"><button class="remove-btn" onclick="removePhoto(${i})">×</button>`;
-      grid.appendChild(d);
-    });
-    if (currentImages.length < 3) {
-      const btn = document.createElement('div');
-      btn.className = 'add-photo-btn';
-      btn.onclick = addPhoto;
-      btn.innerHTML = '<span>＋</span><span>拍照/选图</span>';
-      grid.appendChild(btn);
-    }
-  }
-
-  // ===== 添加行 =====
-  function addRow() {
-    const text = document.getElementById('textDisplay').value.trim();
-    if (!text && currentImages.length === 0) { showToast('请先录音或添加图片'); return; }
-    records.push({ text, images: [...currentImages] });
+    // 开始录音：立即清空文本框
     document.getElementById('textDisplay').value = '';
-    currentImages = [];
-    renderPhotoGrid();
-    renderRecordsList();
-    showToast(`已添加第 ${records.length} 行 ✅`);
-  }
 
-  // ===== 记录列表 =====
-  function renderRecordsList() {
-    const list = document.getElementById('recordsList');
-    document.getElementById('recordCount').textContent = `${records.length} 行`;
-    document.getElementById('exportBtn').disabled = records.length === 0;
-    if (!records.length) {
-      list.innerHTML = '<div class="empty-tip">暂无记录，添加第一行吧～</div>';
-      return;
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+      // 停止所有音轨
+      stream.getTracks().forEach(t => t.stop());
+      setBtnProcessing();
+
+      // 保底定时器：35秒后强制恢复按钮
+      clearTimeout(safetyTimer);
+      safetyTimer = setTimeout(() => {
+        showToast('识别超时，请重试');
+        setBtnIdle();
+      }, 35000);
+
+      try {
+        if (audioChunks.length === 0) {
+          throw new Error('未录到音频，请检查麦克风');
+        }
+        const blob   = new Blob(audioChunks, { type: mime || 'audio/webm' });
+        const result = await recognizeAudio(blob);
+
+        // 最终结果覆盖文本框
+        document.getElementById('textDisplay').value = result;
+        if (!result.trim()) showToast('未识别到内容，请重试');
+
+      } catch(err) {
+        console.error('识别错误：', err);
+        showToast('识别失败：' + err.message);
+        document.getElementById('textDisplay').value = '';
+      } finally {
+        clearTimeout(safetyTimer);
+        setBtnIdle();
+      }
+    };
+
+    mediaRecorder.onerror = (e) => {
+      console.error('MediaRecorder错误：', e);
+      showToast('录音出错：' + (e.error?.message || '未知错误'));
+      isRecording = false;
+      setBtnIdle();
+    };
+
+    mediaRecorder.start(100);
+    isRecording = true;
+    setBtnRecording();
+
+  } catch(err) {
+    console.error('启动录音失败：', err);
+    if (err.name === 'NotAllowedError') {
+      showToast('请允许麦克风权限后重试');
+    } else if (err.name === 'NotFoundError') {
+      showToast('未找到麦克风设备');
+    } else {
+      showToast('录音启动失败：' + err.message);
     }
-    list.innerHTML = '';
-    records.forEach((row, i) => {
-      const d = document.createElement('div');
-      d.className = 'record-item';
-      d.innerHTML = `
-        <div class="record-item-header">
-          <span class="row-num">第 ${i+1} 行</span>
-          <button class="delete-row-btn" onclick="deleteRow(${i})">🗑 删除</button>
-        </div>
-        <div class="record-text">${row.text || '（无文字）'}</div>
-        ${row.images.length ? `<div class="record-images">
-          ${row.images.map(s=>`<img src="${s}">`).join('')}
-        </div>` : ''}`;
-      list.appendChild(d);
+    setBtnIdle();
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && isRecording) {
+    isRecording = false;
+    try { mediaRecorder.stop(); } catch(e) { console.error(e); setBtnIdle(); }
+  }
+}
+
+// ===================== 按钮状态 =====================
+function setBtnIdle() {
+  const btn = document.getElementById('voiceBtn');
+  btn.className = 'voice-btn';
+  btn.onclick   = toggleRecording;
+  document.getElementById('voiceBtnInner').innerHTML = '🎤 点击开始录音';
+  const s = document.getElementById('voiceStatus');
+  s.textContent = '点击按钮开始说话，说完再次点击停止识别';
+  s.className   = 'voice-status';
+}
+
+function setBtnRecording() {
+  document.getElementById('voiceBtn').className = 'voice-btn recording';
+  document.getElementById('voiceBtnInner').innerHTML = `
+    <div class="wave-bars">
+      ${Array(6).fill('<div class="wave-bar"></div>').join('')}
+    </div>
+    <span>录音中… 点击停止</span>`;
+  const s = document.getElementById('voiceStatus');
+  s.textContent = '🔴 正在录音，说完后点击按钮停止';
+  s.className   = 'voice-status recording';
+}
+
+function setBtnProcessing() {
+  document.getElementById('voiceBtn').className = 'voice-btn processing';
+  document.getElementById('voiceBtnInner').innerHTML = '⏳ 识别中，请稍候…';
+  const s = document.getElementById('voiceStatus');
+  s.textContent = '正在上传识别，请稍候...';
+  s.className   = 'voice-status processing';
+}
+
+// ===================== 图片处理 =====================
+function addPhoto() {
+  if (currentImages.length >= 3) { showToast('最多添加3张图片'); return; }
+  document.getElementById('fileInput').click();
+}
+
+function handleFileSelect(e) {
+  for (const file of e.target.files) {
+    if (currentImages.length >= 3) break;
+    const reader = new FileReader();
+    reader.onload = ev => { currentImages.push(ev.target.result); renderPhotoGrid(); };
+    reader.readAsDataURL(file);
+  }
+  e.target.value = '';
+}
+
+function removePhoto(i) { currentImages.splice(i, 1); renderPhotoGrid(); }
+
+function renderPhotoGrid() {
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = '';
+  currentImages.forEach((src, i) => {
+    const d = document.createElement('div');
+    d.className = 'photo-item';
+    d.innerHTML = `<img src="${src}"><button class="remove-btn" onclick="removePhoto(${i})">×</button>`;
+    grid.appendChild(d);
+  });
+  if (currentImages.length < 3) {
+    const btn = document.createElement('div');
+    btn.className = 'add-photo-btn';
+    btn.onclick   = addPhoto;
+    btn.innerHTML = '<span>＋</span><span>拍照/选图</span>';
+    grid.appendChild(btn);
+  }
+}
+
+// ===================== 添加行 =====================
+function addRow() {
+  const text = document.getElementById('textDisplay').value.trim();
+  if (!text && currentImages.length === 0) { showToast('请先录音或添加图片'); return; }
+  records.push({ text, images: [...currentImages] });
+  document.getElementById('textDisplay').value = '';
+  currentImages = [];
+  renderPhotoGrid();
+  renderRecordsList();
+  showToast(`已添加第 ${records.length} 行 ✅`);
+}
+
+// ===================== 记录列表 =====================
+function renderRecordsList() {
+  const list = document.getElementById('recordsList');
+  document.getElementById('recordCount').textContent = `${records.length} 行`;
+  document.getElementById('exportBtn').disabled = records.length === 0;
+  if (!records.length) {
+    list.innerHTML = '<div class="empty-tip">暂无记录，添加第一行吧～</div>';
+    return;
+  }
+  list.innerHTML = '';
+  records.forEach((row, i) => {
+    const d = document.createElement('div');
+    d.className = 'record-item';
+    d.innerHTML = `
+      <div class="record-item-header">
+        <span class="row-num">第 ${i+1} 行</span>
+        <button class="delete-row-btn" onclick="deleteRow(${i})">🗑 删除</button>
+      </div>
+      <div class="record-text">${row.text || '（无文字）'}</div>
+      ${row.images.length ? `<div class="record-images">
+        ${row.images.map(s => `<img src="${s}">`).join('')}
+      </div>` : ''}`;
+    list.appendChild(d);
+  });
+}
+
+function deleteRow(i) { records.splice(i, 1); renderRecordsList(); showToast('已删除'); }
+
+// ===================== 导出Excel =====================
+async function exportExcel() {
+  if (!records.length) return;
+  showToast('正在生成Excel，请稍候...');
+  document.getElementById('exportBtn').disabled = true;
+  try {
+    const res = await fetch('/generate-excel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows: records })
     });
+    if (!res.ok) throw new Error('服务器错误 ' + res.status);
+    const blob = await res.blob();
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'')}.xlsx`;
+    a.click();
+    showToast('导出成功 📊');
+  } catch(err) {
+    showToast('导出失败：' + err.message);
+  } finally {
+    document.getElementById('exportBtn').disabled = false;
   }
+}
 
-  function deleteRow(i) { records.splice(i,1); renderRecordsList(); showToast('已删除'); }
-
-  // ===== 导出Excel =====
-  async function exportExcel() {
-    if (!records.length) return;
-    showToast('正在生成Excel，请稍候...');
-    document.getElementById('exportBtn').disabled = true;
-    try {
-      const res = await fetch('/generate-excel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows: records })
-      });
-      if (!res.ok) throw new Error('服务器错误');
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'')}.xlsx`;
-      a.click();
-      showToast('导出成功 📊');
-    } catch (err) {
-      showToast('导出失败：' + err.message);
-    } finally {
-      document.getElementById('exportBtn').disabled = false;
-    }
-  }
-
-  // ===== Toast =====
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
-  }
+// ===================== Toast =====================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
 </script>
 </body>
 </html>
