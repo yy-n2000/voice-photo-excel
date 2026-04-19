@@ -101,8 +101,8 @@ app.post('/generate-excel', async (req, res) => {
             const cellH = rowHeightToPx(rowHeight);
 
             // ===== 计算缩放 =====
-            const maxW = cellW - PADDING * 2;
-            const maxH = cellH - PADDING * 2;
+            const maxW = cellW - PADDING * 3;
+            const maxH = cellH - PADDING * 3;
 
             const ratio = Math.min(maxW / imgW, maxH / imgH, 1);
 
