@@ -19,10 +19,8 @@
     }
     .header h1 { font-size: 20px; margin-bottom: 4px; }
     .header p { font-size: 13px; opacity: 0.85; }
-
     .container { padding: 16px; max-width: 600px; margin: 0 auto; }
 
-    /* 当前输入区 */
     .input-card {
       background: white;
       border-radius: 16px;
@@ -32,7 +30,8 @@
     }
     .input-card h2 { font-size: 15px; color: #333; margin-bottom: 16px; }
 
-    /* 语音按钮 */
+    /* 录音区域 */
+    .voice-area { margin-bottom: 16px; }
     .voice-btn {
       width: 100%;
       height: 64px;
@@ -45,192 +44,156 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 10px;
       transition: all 0.2s;
       -webkit-tap-highlight-color: transparent;
     }
     .voice-btn:active { transform: scale(0.97); }
     .voice-btn.recording {
       background: linear-gradient(135deg, #e74c3c, #c0392b);
-      animation: pulse 1.2s infinite;
     }
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.4); }
-      50% { box-shadow: 0 0 0 12px rgba(231,76,60,0); }
+    .voice-btn.processing {
+      background: linear-gradient(135deg, #f39c12, #e67e22);
+    }
+    .voice-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* 波形动画 */
+    .wave-bars {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 24px;
+    }
+    .wave-bar {
+      width: 4px;
+      background: white;
+      border-radius: 2px;
+      animation: wave 0.8s ease-in-out infinite;
+    }
+    .wave-bar:nth-child(1) { animation-delay: 0s; }
+    .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(6) { animation-delay: 0.1s; }
+    @keyframes wave {
+      0%, 100% { height: 6px; }
+      50% { height: 22px; }
     }
 
-    /* 文字显示框 */
+    /* 录音状态提示 */
+    .voice-status {
+      text-align: center;
+      font-size: 13px;
+      color: #999;
+      margin-top: 8px;
+      height: 18px;
+    }
+    .voice-status.active { color: #e74c3c; }
+    .voice-status.processing { color: #f39c12; }
+
+    /* 文字框 */
     .text-display {
       width: 100%;
-      min-height: 80px;
+      min-height: 90px;
       border: 1.5px solid #e0e0e0;
       border-radius: 12px;
       padding: 12px;
       font-size: 15px;
       color: #333;
       background: #fafafa;
-      resize: none;
+      resize: vertical;
       outline: none;
       margin-bottom: 16px;
       line-height: 1.6;
+      font-family: inherit;
     }
     .text-display:focus { border-color: #4472C4; background: white; }
 
     /* 图片区 */
-    .photo-area { margin-bottom: 16px; }
     .photo-label { font-size: 14px; color: #666; margin-bottom: 10px; }
-    .photo-grid {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
+    .photo-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
     .photo-item {
-      width: 90px;
-      height: 90px;
-      border-radius: 12px;
-      overflow: hidden;
-      position: relative;
+      width: 90px; height: 90px;
+      border-radius: 12px; overflow: hidden; position: relative;
     }
-    .photo-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    .photo-item img { width: 100%; height: 100%; object-fit: cover; }
     .photo-item .remove-btn {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 22px;
-      height: 22px;
-      background: rgba(0,0,0,0.55);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      font-size: 13px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: absolute; top: 4px; right: 4px;
+      width: 22px; height: 22px;
+      background: rgba(0,0,0,0.55); color: white;
+      border: none; border-radius: 50%; font-size: 14px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
     .add-photo-btn {
-      width: 90px;
-      height: 90px;
-      border-radius: 12px;
-      border: 2px dashed #c0c0c0;
+      width: 90px; height: 90px;
+      border-radius: 12px; border: 2px dashed #c0c0c0;
       background: #f8f8f8;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: #999;
-      font-size: 12px;
-      gap: 4px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      cursor: pointer; color: #999; font-size: 12px; gap: 4px;
       -webkit-tap-highlight-color: transparent;
     }
     .add-photo-btn span:first-child { font-size: 28px; }
 
     /* 添加行按钮 */
     .add-row-btn {
-      width: 100%;
-      height: 52px;
-      border-radius: 12px;
-      border: none;
-      background: #27ae60;
-      color: white;
-      font-size: 15px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
+      width: 100%; height: 52px;
+      border-radius: 12px; border: none;
+      background: #27ae60; color: white;
+      font-size: 15px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
       -webkit-tap-highlight-color: transparent;
     }
     .add-row-btn:active { background: #219a52; }
 
     /* 已记录列表 */
     .records-card {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 16px;
+      background: white; border-radius: 16px;
+      padding: 20px; margin-bottom: 16px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     }
     .records-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 14px;
     }
     .records-header h2 { font-size: 15px; color: #333; }
     .record-count {
-      background: #4472C4;
-      color: white;
-      border-radius: 12px;
-      padding: 2px 10px;
-      font-size: 13px;
+      background: #4472C4; color: white;
+      border-radius: 12px; padding: 2px 10px; font-size: 13px;
     }
     .record-item {
-      border: 1px solid #eee;
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 10px;
-      background: #fafafa;
-    }
-    .record-text {
-      font-size: 14px;
-      color: #333;
-      margin-bottom: 8px;
-      line-height: 1.5;
-    }
-    .record-images {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .record-images img {
-      width: 56px;
-      height: 56px;
-      object-fit: cover;
-      border-radius: 8px;
+      border: 1px solid #eee; border-radius: 12px;
+      padding: 12px; margin-bottom: 10px; background: #fafafa;
     }
     .record-item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 6px;
     }
     .row-num { font-size: 12px; color: #999; }
     .delete-row-btn {
-      border: none;
-      background: none;
-      color: #e74c3c;
-      font-size: 13px;
-      cursor: pointer;
-      padding: 2px 6px;
+      border: none; background: none;
+      color: #e74c3c; font-size: 13px; cursor: pointer; padding: 2px 6px;
+    }
+    .record-text { font-size: 14px; color: #333; margin-bottom: 8px; line-height: 1.5; }
+    .record-images { display: flex; gap: 8px; flex-wrap: wrap; }
+    .record-images img {
+      width: 56px; height: 56px;
+      object-fit: cover; border-radius: 8px;
     }
     .empty-tip {
-      text-align: center;
-      color: #bbb;
-      font-size: 14px;
-      padding: 20px 0;
+      text-align: center; color: #bbb;
+      font-size: 14px; padding: 20px 0;
     }
 
     /* 导出按钮 */
     .export-btn {
-      width: 100%;
-      height: 56px;
-      border-radius: 16px;
-      border: none;
+      width: 100%; height: 56px;
+      border-radius: 16px; border: none;
       background: linear-gradient(135deg, #f39c12, #e67e22);
-      color: white;
-      font-size: 17px;
-      font-weight: 600;
+      color: white; font-size: 17px; font-weight: 600;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
       margin-bottom: 30px;
       box-shadow: 0 4px 15px rgba(243,156,18,0.35);
       -webkit-tap-highlight-color: transparent;
@@ -238,23 +201,14 @@
     .export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .export-btn:not(:disabled):active { transform: scale(0.98); }
 
-    /* 隐藏的文件输入 */
     #fileInput { display: none; }
 
-    /* 提示 */
     .toast {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
+      position: fixed; bottom: 30px; left: 50%;
       transform: translateX(-50%);
-      background: rgba(0,0,0,0.75);
-      color: white;
-      padding: 10px 22px;
-      border-radius: 24px;
-      font-size: 14px;
-      display: none;
-      z-index: 999;
-      white-space: nowrap;
+      background: rgba(0,0,0,0.75); color: white;
+      padding: 10px 22px; border-radius: 24px;
+      font-size: 14px; display: none; z-index: 999; white-space: nowrap;
     }
     .toast.show { display: block; }
   </style>
@@ -267,41 +221,33 @@
 </div>
 
 <div class="container">
-
-  <!-- 输入区 -->
   <div class="input-card">
     <h2>➕ 新增一行记录</h2>
 
-    <!-- 语音按钮 -->
-    <button class="voice-btn" id="voiceBtn" onclick="toggleRecording()">
-      <span id="voiceIcon">🎤</span>
-      <span id="voiceText">按住说话（点击开始录音）</span>
-    </button>
+    <div class="voice-area">
+      <button class="voice-btn" id="voiceBtn" onclick="toggleRecording()">
+        <span id="voiceBtnContent">🎤 点击开始录音</span>
+      </button>
+      <div class="voice-status" id="voiceStatus">点击按钮开始说话，再次点击停止并识别</div>
+    </div>
 
-    <!-- 文字编辑框 -->
     <textarea class="text-display" id="textDisplay"
-      placeholder="语音识别结果会显示在这里，也可以手动输入或修改..."></textarea>
+      placeholder="语音识别结果显示在这里，也可以手动输入或修改..."></textarea>
 
-    <!-- 图片区 -->
-    <div class="photo-area">
-      <div class="photo-label">📷 添加图片（最多3张）</div>
-      <div class="photo-grid" id="photoGrid">
-        <div class="add-photo-btn" onclick="addPhoto()">
-          <span>＋</span>
-          <span>拍照/选图</span>
-        </div>
+    <div class="photo-label">📷 添加图片（最多3张）</div>
+    <div class="photo-grid" id="photoGrid">
+      <div class="add-photo-btn" onclick="addPhoto()">
+        <span>＋</span><span>拍照/选图</span>
       </div>
     </div>
 
     <input type="file" id="fileInput" accept="image/*" capture="environment" multiple onchange="handleFileSelect(event)">
 
-    <!-- 添加到列表 -->
     <button class="add-row-btn" onclick="addRow()">
       ✅ 添加到记录列表
     </button>
   </div>
 
-  <!-- 已记录列表 -->
   <div class="records-card">
     <div class="records-header">
       <h2>📋 已记录</h2>
@@ -312,94 +258,247 @@
     </div>
   </div>
 
-  <!-- 导出按钮 -->
   <button class="export-btn" id="exportBtn" onclick="exportExcel()" disabled>
     📊 导出 Excel 文件
   </button>
-
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-  // ==================== 状态 ====================
-  let records = [];           // 所有行的数据
-  let currentImages = [];     // 当前正在添加的图片（base64）
-  let recognition = null;     // 语音识别对象
+  // ========== 讯飞配置 ==========
+  const XF_APPID     = 'ed958adf';
+  const XF_API_KEY   = '21849580283bff759bb2a50f6ed0db2d';
+  const XF_API_SECRET = 'Yjk3ZDBkNmVkMmRjZWNjNTQ5MTEzYjEy';
+
+  // ========== 状态 ==========
+  let records = [];
+  let currentImages = [];
   let isRecording = false;
+  let mediaRecorder = null;
+  let audioChunks = [];
 
-  // ==================== 语音识别 ====================
-  function initSpeech() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      showToast('当前浏览器不支持语音识别，请用Chrome或Safari');
-      return null;
-    }
-    const rec = new SpeechRecognition();
-    rec.lang = 'zh-CN';
-    rec.continuous = true;        // 持续识别
-    rec.interimResults = true;    // 显示中间结果
+  // ========== 讯飞语音识别核心 ==========
+  function getXFWebsocketUrl() {
+    const host = 'iat-api.xfyun.cn';
+    const date = new Date().toUTCString();
+    const requestLine = 'GET /v2/iat HTTP/1.1';
+    const signatureOrigin = `host: ${host}\ndate: ${date}\n${requestLine}`;
 
-    rec.onresult = (event) => {
-      let finalText = '';
-      let interimText = '';
-      for (let i = 0; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalText += event.results[i][0].transcript;
-        } else {
-          interimText += event.results[i][0].transcript;
-        }
-      }
-      document.getElementById('textDisplay').value = finalText + interimText;
-    };
-
-    rec.onerror = (e) => {
-      console.error('语音错误:', e.error);
-      if (e.error === 'not-allowed') {
-        showToast('请允许麦克风权限后重试');
-      }
-      stopRecording();
-    };
-
-    rec.onend = () => {
-      if (isRecording) rec.start(); // 自动续录
-    };
-
-    return rec;
+    // HMAC-SHA256 签名
+    const enc = new TextEncoder();
+    return crypto.subtle.importKey(
+      'raw', enc.encode(XF_API_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    ).then(key =>
+      crypto.subtle.sign('HMAC', key, enc.encode(signatureOrigin))
+    ).then(signature => {
+      const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+      const authorizationOrigin =
+        `api_key="${XF_API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${signatureBase64}"`;
+      const authorization = btoa(authorizationOrigin);
+      const url = `wss://${host}/v2/iat?authorization=${encodeURIComponent(authorization)}&date=${encodeURIComponent(date)}&host=${host}`;
+      return url;
+    });
   }
 
-  function toggleRecording() {
+  function sendAudioToXunfei(audioBlob) {
+    return new Promise(async (resolve, reject) => {
+      const url = await getXFWebsocketUrl();
+      const ws = new WebSocket(url);
+      let resultText = '';
+
+      // 把blob转为ArrayBuffer
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioData = new Uint8Array(arrayBuffer);
+
+      ws.onopen = () => {
+        // 分帧发送音频数据
+        const FRAME_SIZE = 1280;
+        let offset = 0;
+        let frameIndex = 0;
+
+        const sendFrame = () => {
+          if (offset >= audioData.length) {
+            // 发送结束帧
+            ws.send(JSON.stringify({
+              data: { status: 2, format: 'audio/L16;rate=16000', encoding: 'raw', audio: '' }
+            }));
+            return;
+          }
+          const chunk = audioData.slice(offset, offset + FRAME_SIZE);
+          const base64Audio = btoa(String.fromCharCode(...chunk));
+          const frame = {
+            common: frameIndex === 0 ? { app_id: XF_APPID } : undefined,
+            business: frameIndex === 0 ? {
+              language: 'zh_cn', domain: 'iat', accent: 'mandarin',
+              vad_eos: 5000, dwa: 'wpgs'
+            } : undefined,
+            data: {
+              status: frameIndex === 0 ? 0 : 1,
+              format: 'audio/L16;rate=16000',
+              encoding: 'raw',
+              audio: base64Audio
+            }
+          };
+          // 删除undefined字段
+          if (!frame.common) delete frame.common;
+          if (!frame.business) delete frame.business;
+
+          ws.send(JSON.stringify(frame));
+          offset += FRAME_SIZE;
+          frameIndex++;
+          setTimeout(sendFrame, 40);
+        };
+        sendFrame();
+      };
+
+      ws.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.code !== 0) {
+          reject(new Error(`讯飞错误: ${data.message}`));
+          ws.close();
+          return;
+        }
+        if (data.data && data.data.result) {
+          const words = data.data.result.ws || [];
+          words.forEach(w => w.cw.forEach(c => resultText += c.w));
+        }
+        if (data.data && data.data.status === 2) {
+          ws.close();
+          resolve(resultText);
+        }
+      };
+
+      ws.onerror = (e) => reject(new Error('WebSocket连接失败'));
+      ws.onclose = () => {};
+
+      setTimeout(() => {
+        ws.close();
+        resolve(resultText || '');
+      }, 30000);
+    });
+  }
+
+  // ========== 录音控制 ==========
+  async function toggleRecording() {
     if (isRecording) {
       stopRecording();
     } else {
-      startRecording();
+      await startRecording();
     }
   }
 
-  function startRecording() {
-    if (!recognition) recognition = initSpeech();
-    if (!recognition) return;
-    recognition.start();
-    isRecording = true;
-    document.getElementById('voiceBtn').classList.add('recording');
-    document.getElementById('voiceIcon').textContent = '⏹';
-    document.getElementById('voiceText').textContent = '录音中...点击停止';
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // 优先用pcm能用的格式
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=pcm')
+        ? 'audio/webm;codecs=pcm'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/ogg';
+
+      mediaRecorder = new MediaRecorder(stream, { mimeType });
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
+
+        // 转换为16k PCM再发给讯飞
+        setProcessing();
+        try {
+          const pcmBlob = await convertToPCM(audioBlob);
+          const text = await sendAudioToXunfei(pcmBlob);
+          document.getElementById('textDisplay').value = text || '';
+          if (!text) showToast('未识别到内容，请重试');
+        } catch (err) {
+          showToast('识别失败：' + err.message);
+          console.error(err);
+        }
+        resetVoiceBtn();
+      };
+
+      mediaRecorder.start(100);
+      isRecording = true;
+      setRecording();
+
+    } catch (err) {
+      if (err.name === 'NotAllowedError') {
+        showToast('请允许麦克风权限后重试');
+      } else {
+        showToast('录音启动失败：' + err.message);
+      }
+    }
   }
 
   function stopRecording() {
-    if (recognition) recognition.stop();
-    isRecording = false;
-    document.getElementById('voiceBtn').classList.remove('recording');
-    document.getElementById('voiceIcon').textContent = '🎤';
-    document.getElementById('voiceText').textContent = '按住说话（点击开始录音）';
+    if (mediaRecorder && isRecording) {
+      isRecording = false;
+      mediaRecorder.stop();
+    }
   }
 
-  // ==================== 图片处理 ====================
-  function addPhoto() {
-    if (currentImages.length >= 3) {
-      showToast('最多添加3张图片');
-      return;
+  // 把录音转换为16kHz单声道PCM（讯飞要求的格式）
+  async function convertToPCM(blob) {
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    const pcmData = audioBuffer.getChannelData(0);
+
+    // Float32 转 Int16
+    const int16 = new Int16Array(pcmData.length);
+    for (let i = 0; i < pcmData.length; i++) {
+      int16[i] = Math.max(-32768, Math.min(32767, Math.round(pcmData[i] * 32767)));
     }
+    return new Blob([int16.buffer], { type: 'audio/L16' });
+  }
+
+  // ========== 按钮状态 ==========
+  function setRecording() {
+    const btn = document.getElementById('voiceBtn');
+    btn.className = 'voice-btn recording';
+    btn.innerHTML = `
+      <div class="wave-bars">
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+      </div>
+      <span>录音中，点击停止</span>`;
+    const status = document.getElementById('voiceStatus');
+    status.textContent = '🔴 正在录音，说完后点击停止...';
+    status.className = 'voice-status active';
+  }
+
+  function setProcessing() {
+    const btn = document.getElementById('voiceBtn');
+    btn.className = 'voice-btn processing';
+    btn.disabled = true;
+    btn.innerHTML = `<span>⏳ 识别中，请稍候...</span>`;
+    const status = document.getElementById('voiceStatus');
+    status.textContent = '正在上传音频并识别...';
+    status.className = 'voice-status processing';
+  }
+
+  function resetVoiceBtn() {
+    const btn = document.getElementById('voiceBtn');
+    btn.className = 'voice-btn';
+    btn.disabled = false;
+    btn.innerHTML = `<span id="voiceBtnContent">🎤 点击开始录音</span>`;
+    const status = document.getElementById('voiceStatus');
+    status.textContent = '点击按钮开始说话，再次点击停止并识别';
+    status.className = 'voice-status';
+  }
+
+  // ========== 图片处理 ==========
+  function addPhoto() {
+    if (currentImages.length >= 3) { showToast('最多添加3张图片'); return; }
     document.getElementById('fileInput').click();
   }
 
@@ -408,119 +507,83 @@
     for (let file of files) {
       if (currentImages.length >= 3) break;
       const reader = new FileReader();
-      reader.onload = (e) => {
-        currentImages.push(e.target.result);
-        renderPhotoGrid();
-      };
+      reader.onload = (e) => { currentImages.push(e.target.result); renderPhotoGrid(); };
       reader.readAsDataURL(file);
     }
-    event.target.value = ''; // 清空，允许重复选同一张
+    event.target.value = '';
   }
 
-  function removePhoto(index) {
-    currentImages.splice(index, 1);
-    renderPhotoGrid();
-  }
+  function removePhoto(index) { currentImages.splice(index, 1); renderPhotoGrid(); }
 
   function renderPhotoGrid() {
     const grid = document.getElementById('photoGrid');
     grid.innerHTML = '';
-
     currentImages.forEach((src, i) => {
       const item = document.createElement('div');
       item.className = 'photo-item';
-      item.innerHTML = `
-        <img src="${src}" alt="图片${i+1}">
-        <button class="remove-btn" onclick="removePhoto(${i})">×</button>
-      `;
+      item.innerHTML = `<img src="${src}"><button class="remove-btn" onclick="removePhoto(${i})">×</button>`;
       grid.appendChild(item);
     });
-
     if (currentImages.length < 3) {
-      const addBtn = document.createElement('div');
-      addBtn.className = 'add-photo-btn';
-      addBtn.onclick = addPhoto;
-      addBtn.innerHTML = '<span>＋</span><span>拍照/选图</span>';
-      grid.appendChild(addBtn);
+      const btn = document.createElement('div');
+      btn.className = 'add-photo-btn';
+      btn.onclick = addPhoto;
+      btn.innerHTML = '<span>＋</span><span>拍照/选图</span>';
+      grid.appendChild(btn);
     }
   }
 
-  // ==================== 添加行 ====================
+  // ========== 添加行 ==========
   function addRow() {
     const text = document.getElementById('textDisplay').value.trim();
-    if (!text && currentImages.length === 0) {
-      showToast('请先录音或添加图片');
-      return;
-    }
-    records.push({
-      text: text,
-      images: [...currentImages]
-    });
-
-    // 清空输入区
+    if (!text && currentImages.length === 0) { showToast('请先录音或添加图片'); return; }
+    records.push({ text, images: [...currentImages] });
     document.getElementById('textDisplay').value = '';
     currentImages = [];
     renderPhotoGrid();
-    if (isRecording) stopRecording();
-
     renderRecordsList();
     showToast('已添加第 ' + records.length + ' 行 ✅');
   }
 
-  // ==================== 渲染列表 ====================
+  // ========== 渲染列表 ==========
   function renderRecordsList() {
     const list = document.getElementById('recordsList');
-    const countEl = document.getElementById('recordCount');
-    const exportBtn = document.getElementById('exportBtn');
-
-    countEl.textContent = records.length + ' 行';
-    exportBtn.disabled = records.length === 0;
-
+    document.getElementById('recordCount').textContent = records.length + ' 行';
+    document.getElementById('exportBtn').disabled = records.length === 0;
     if (records.length === 0) {
       list.innerHTML = '<div class="empty-tip">暂无记录，添加第一行吧～</div>';
       return;
     }
-
     list.innerHTML = '';
     records.forEach((row, i) => {
       const item = document.createElement('div');
       item.className = 'record-item';
-      const imgsHtml = row.images.map(src =>
-        `<img src="${src}" alt="图">`
-      ).join('');
       item.innerHTML = `
         <div class="record-item-header">
           <span class="row-num">第 ${i+1} 行</span>
           <button class="delete-row-btn" onclick="deleteRow(${i})">🗑 删除</button>
         </div>
         <div class="record-text">${row.text || '（无文字）'}</div>
-        ${row.images.length > 0 ? `<div class="record-images">${imgsHtml}</div>` : ''}
+        ${row.images.length > 0 ? `<div class="record-images">${row.images.map(s=>`<img src="${s}">`).join('')}</div>` : ''}
       `;
       list.appendChild(item);
     });
   }
 
-  function deleteRow(index) {
-    records.splice(index, 1);
-    renderRecordsList();
-    showToast('已删除');
-  }
+  function deleteRow(index) { records.splice(index, 1); renderRecordsList(); showToast('已删除'); }
 
-  // ==================== 导出Excel ====================
+  // ========== 导出Excel ==========
   async function exportExcel() {
     if (records.length === 0) return;
     showToast('正在生成Excel，请稍候...');
     document.getElementById('exportBtn').disabled = true;
-
     try {
       const response = await fetch('/generate-excel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rows: records })
       });
-
       if (!response.ok) throw new Error('服务器错误');
-
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -528,7 +591,7 @@
       a.download = '语音拍照记录_' + new Date().toLocaleDateString('zh-CN').replace(/\//g, '') + '.xlsx';
       a.click();
       URL.revokeObjectURL(url);
-      showToast('导出成功！请查看下载文件 📊');
+      showToast('导出成功！📊');
     } catch (err) {
       showToast('导出失败：' + err.message);
     } finally {
@@ -536,7 +599,7 @@
     }
   }
 
-  // ==================== 工具函数 ====================
+  // ========== 工具 ==========
   function showToast(msg) {
     const toast = document.getElementById('toast');
     toast.textContent = msg;
@@ -544,6 +607,5 @@
     setTimeout(() => toast.classList.remove('show'), 2500);
   }
 </script>
-
 </body>
 </html>
