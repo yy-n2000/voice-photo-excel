@@ -2,249 +2,91 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>语音拍照记录表</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
-      background: #f0f2f5;
-      min-height: 100vh;
-    }
-    .header {
-      background: linear-gradient(135deg, #4472C4, #2d5aa0);
-      color: white;
-      padding: 20px 16px 16px;
-      padding-top: max(20px, env(safe-area-inset-top));
-      text-align: center;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; background: #f0f2f5; min-height: 100vh; }
+    .header { background: linear-gradient(135deg, #4472C4, #2d5aa0); color: white; padding: 20px 16px 16px; text-align: center; }
     .header h1 { font-size: 20px; margin-bottom: 4px; }
     .header p  { font-size: 13px; opacity: 0.85; }
     .container { padding: 16px; max-width: 600px; margin: 0 auto; }
 
-    .input-card {
-      background: white; border-radius: 16px;
-      padding: 20px; margin-bottom: 16px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    }
+    .input-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
     .input-card h2 { font-size: 15px; color: #333; margin-bottom: 16px; }
 
-    .voice-btn {
-      width: 100%; height: 64px; border-radius: 32px; border: none;
-      background: linear-gradient(135deg, #4472C4, #2d5aa0);
-      color: white; font-size: 16px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      transition: background 0.2s;
-      -webkit-tap-highlight-color: transparent;
-      margin-bottom: 8px;
-    }
+    .voice-btn { width: 100%; height: 64px; border-radius: 32px; border: none; background: linear-gradient(135deg, #4472C4, #2d5aa0); color: white; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 0.2s; -webkit-tap-highlight-color: transparent; margin-bottom: 8px; }
     .voice-btn.recording  { background: linear-gradient(135deg, #e74c3c, #c0392b); }
     .voice-btn.processing { background: linear-gradient(135deg, #f39c12, #e67e22); pointer-events: none; }
-
     .wave-bars { display: flex; align-items: center; gap: 3px; height: 24px; }
     .wave-bar  { width: 4px; background: white; border-radius: 2px; animation: wave 0.8s ease-in-out infinite; }
-    .wave-bar:nth-child(1){animation-delay:0.0s}
-    .wave-bar:nth-child(2){animation-delay:0.1s}
-    .wave-bar:nth-child(3){animation-delay:0.2s}
-    .wave-bar:nth-child(4){animation-delay:0.3s}
-    .wave-bar:nth-child(5){animation-delay:0.2s}
-    .wave-bar:nth-child(6){animation-delay:0.1s}
+    .wave-bar:nth-child(1){animation-delay:0.0s}.wave-bar:nth-child(2){animation-delay:0.1s}.wave-bar:nth-child(3){animation-delay:0.2s}.wave-bar:nth-child(4){animation-delay:0.3s}.wave-bar:nth-child(5){animation-delay:0.2s}.wave-bar:nth-child(6){animation-delay:0.1s}
     @keyframes wave { 0%,100%{height:4px} 50%{height:22px} }
+    .voice-status { text-align:center; font-size:13px; color:#aaa; margin-bottom:14px; min-height:18px; }
+    .voice-status.recording  { color:#e74c3c; font-weight:500; }
+    .voice-status.processing { color:#f39c12; font-weight:500; }
 
-    .voice-status {
-      text-align: center; font-size: 13px; color: #aaa;
-      margin-bottom: 14px; min-height: 18px;
-    }
-    .voice-status.recording  { color: #e74c3c; font-weight: 500; }
-    .voice-status.processing { color: #f39c12; font-weight: 500; }
+    .text-display { width:100%; min-height:90px; border:1.5px solid #e0e0e0; border-radius:12px; padding:12px; font-size:15px; color:#333; background:#fafafa; resize:vertical; outline:none; margin-bottom:16px; line-height:1.6; font-family:inherit; }
+    .text-display:focus { border-color:#4472C4; background:white; }
 
-    .text-display {
-      width: 100%; min-height: 90px;
-      border: 1.5px solid #e0e0e0; border-radius: 12px;
-      padding: 12px; font-size: 15px; color: #333;
-      background: #fafafa; resize: vertical; outline: none;
-      margin-bottom: 16px; line-height: 1.6; font-family: inherit;
-    }
-    .text-display:focus { border-color: #4472C4; background: white; }
+    .photo-label { font-size:14px; color:#666; margin-bottom:10px; }
+    .photo-grid  { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+    .photo-item  { width:90px; height:90px; border-radius:12px; overflow:hidden; position:relative; }
+    .photo-item img { width:100%; height:100%; object-fit:cover; }
+    .photo-item .btn-row { position:absolute; bottom:0; left:0; right:0; display:flex; }
+    .photo-item .edit-btn   { flex:1; background:rgba(68,114,196,0.85); color:white; border:none; font-size:11px; padding:4px 0; cursor:pointer; }
+    .photo-item .remove-btn { flex:1; background:rgba(0,0,0,0.55); color:white; border:none; font-size:11px; padding:4px 0; cursor:pointer; }
+    .add-photo-btn { width:90px; height:90px; border-radius:12px; border:2px dashed #c0c0c0; background:#f8f8f8; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; color:#999; font-size:12px; gap:4px; -webkit-tap-highlight-color:transparent; }
+    .add-photo-btn span:first-child { font-size:28px; }
 
-    .photo-label { font-size: 14px; color: #666; margin-bottom: 10px; }
-    .photo-grid  { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .add-row-btn { width:100%; height:52px; border-radius:12px; border:none; background:#27ae60; color:white; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; -webkit-tap-highlight-color:transparent; }
+    .add-row-btn:active { background:#219a52; }
 
-    .photo-item {
-      width: 90px; height: 90px;
-      border-radius: 12px; overflow: hidden; position: relative; flex-shrink: 0;
-    }
-    .photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .photo-item .btn-row { position: absolute; bottom: 0; left: 0; right: 0; display: flex; }
-    .photo-item .edit-btn,
-    .photo-item .remove-btn {
-      flex: 1; border: none; color: white;
-      font-size: 11px; padding: 5px 0; cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .photo-item .edit-btn   { background: rgba(68,114,196,0.88); }
-    .photo-item .remove-btn { background: rgba(0,0,0,0.60); }
+    /* 标注弹窗 */
+    .editor-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:1000; display:none; flex-direction:column; }
+    .editor-overlay.show { display:flex; }
+    .editor-toolbar { padding:10px 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:#1a1a2e; }
+    .tool-btn { background:#2d2d44; color:white; border:2px solid transparent; border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .tool-btn.active { border-color:#4472C4; background:#4472C4; }
+    .color-dot { width:28px; height:28px; border-radius:50%; border:3px solid transparent; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .color-dot.active { border-color:white; }
+    .size-slider { width:80px; accent-color:#4472C4; }
+    .editor-canvas-wrap { flex:1; overflow:auto; display:flex; align-items:center; justify-content:center; padding:10px; }
+    .editor-canvas-wrap canvas { border-radius:8px; touch-action:none; max-width:100%; }
+    .editor-actions { padding:12px; display:flex; gap:10px; background:#1a1a2e; }
+    .editor-actions button { flex:1; height:46px; border-radius:12px; border:none; color:white; font-size:15px; cursor:pointer; }
+    .btn-cancel { background:#555; }
+    .btn-undo   { background:#666; }
+    .btn-clear  { background:#e74c3c; }
+    .btn-save   { background:#27ae60; }
 
-    .add-photo-btn {
-      width: 90px; height: 90px; border-radius: 12px;
-      border: 2px dashed #c0c0c0; background: #f8f8f8;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      cursor: pointer; color: #999; font-size: 12px; gap: 4px; flex-shrink: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .add-photo-btn span:first-child { font-size: 28px; }
+    .records-card { background:white; border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+    .records-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .records-header h2 { font-size:15px; color:#333; }
+    .record-count { background:#4472C4; color:white; border-radius:12px; padding:2px 10px; font-size:13px; }
+    .record-item { border:1px solid #eee; border-radius:12px; padding:12px; margin-bottom:10px; background:#fafafa; }
+    .record-item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .row-num { font-size:12px; color:#999; }
+    .delete-row-btn { border:none; background:none; color:#e74c3c; font-size:13px; cursor:pointer; padding:2px 6px; }
+    .record-text { font-size:14px; color:#333; margin-bottom:8px; line-height:1.5; }
+    .record-images { display:flex; gap:8px; flex-wrap:wrap; }
+    .record-images img { width:56px; height:56px; object-fit:cover; border-radius:8px; }
+    .empty-tip { text-align:center; color:#bbb; font-size:14px; padding:20px 0; }
 
-    .add-row-btn {
-      width: 100%; height: 52px; border-radius: 12px; border: none;
-      background: #27ae60; color: white; font-size: 15px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .add-row-btn:active { background: #219a52; }
+    .export-btn { width:100%; height:56px; border-radius:16px; border:none; background:linear-gradient(135deg,#f39c12,#e67e22); color:white; font-size:17px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:30px; box-shadow:0 4px 15px rgba(243,156,18,0.35); -webkit-tap-highlight-color:transparent; }
+    .export-btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .export-btn:not(:disabled):active { transform:scale(0.98); }
 
-    .records-card {
-      background: white; border-radius: 16px;
-      padding: 20px; margin-bottom: 16px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    }
-    .records-header {
-      display: flex; justify-content: space-between;
-      align-items: center; margin-bottom: 14px;
-    }
-    .records-header h2 { font-size: 15px; color: #333; }
-    .record-count {
-      background: #4472C4; color: white;
-      border-radius: 12px; padding: 2px 10px; font-size: 13px;
-    }
-    .record-item {
-      border: 1px solid #eee; border-radius: 12px;
-      padding: 12px; margin-bottom: 10px; background: #fafafa;
-    }
-    .record-item-header {
-      display: flex; justify-content: space-between;
-      align-items: center; margin-bottom: 6px;
-    }
-    .row-num { font-size: 12px; color: #999; }
-    .delete-row-btn {
-      border: none; background: none;
-      color: #e74c3c; font-size: 13px; cursor: pointer; padding: 2px 6px;
-    }
-    .record-text { font-size: 14px; color: #333; margin-bottom: 8px; line-height: 1.5; }
-    .record-images { display: flex; gap: 8px; flex-wrap: wrap; }
-    .record-images img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; }
-    .empty-tip { text-align: center; color: #bbb; font-size: 14px; padding: 20px 0; }
-
-    .export-btn {
-      width: 100%; height: 56px; border-radius: 16px; border: none;
-      background: linear-gradient(135deg, #f39c12, #e67e22);
-      color: white; font-size: 17px; font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      margin-bottom: 40px;
-      box-shadow: 0 4px 15px rgba(243,156,18,0.35);
-      -webkit-tap-highlight-color: transparent;
-    }
-    .export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .export-btn:not(:disabled):active { transform: scale(0.98); }
-
-    #fileInput { display: none; }
-
-    .toast {
-      position: fixed; bottom: 40px; left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.75); color: white;
-      padding: 10px 22px; border-radius: 24px;
-      font-size: 14px; display: none; z-index: 9999;
-      white-space: nowrap; pointer-events: none;
-    }
-    .toast.show { display: block; }
-
-    /* ══ 编辑器 ══ */
-    .editor-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      height: 100%;
-      height: -webkit-fill-available;
-      background: #111;
-      z-index: 2000;
-      display: none;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .editor-overlay.show { display: flex; }
-
-    .editor-toolbar {
-      flex-shrink: 0;
-      background: #1a1a2e;
-      padding: 8px 10px;
-      padding-top: max(8px, env(safe-area-inset-top));
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-      overflow-y: auto;
-      max-height: 110px;
-    }
-    .tool-btn {
-      background: #2d2d44; color: white;
-      border: 2px solid transparent; border-radius: 8px;
-      padding: 5px 10px; font-size: 13px; cursor: pointer;
-      white-space: nowrap;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .tool-btn.active { border-color: #4472C4; background: #4472C4; }
-
-    .color-dot {
-      width: 26px; height: 26px; flex-shrink: 0;
-      border-radius: 50%; border: 3px solid transparent; cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .color-dot.active { border-color: white; }
-    .toolbar-divider { width: 1px; height: 26px; background: #444; flex-shrink: 0; }
-    .size-label { color: #aaa; font-size: 12px; white-space: nowrap; }
-    .size-slider { width: 70px; accent-color: #4472C4; flex-shrink: 0; }
-
-    .editor-canvas-wrap {
-      flex: 1;
-      min-height: 0;
-      overflow: auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px;
-      background: #222;
-    }
-    .editor-canvas-wrap canvas {
-      display: block; border-radius: 6px;
-      touch-action: none;
-      max-width: 100%; max-height: 100%;
-      cursor: crosshair;
-    }
-
-    .editor-actions {
-      flex-shrink: 0;
-      background: #1a1a2e;
-      padding: 10px 12px;
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
-      display: flex;
-      gap: 8px;
-    }
-    .editor-actions button {
-      flex: 1; height: 48px; border-radius: 12px; border: none;
-      color: white; font-size: 15px; cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn-cancel { background: #555; }
-    .btn-undo   { background: #666; }
-    .btn-clear  { background: #c0392b; }
-    .btn-save   { background: #27ae60; }
+    #fileInput { display:none; }
+    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.75); color:white; padding:10px 22px; border-radius:24px; font-size:14px; display:none; z-index:9999; white-space:nowrap; }
+    .toast.show { display:block; }
   </style>
 </head>
 <body>
 
 <div class="header">
   <h1>🎤 语音拍照记录表</h1>
-  <p>语音输入 + 拍照标注，自动生成 Excel</p>
+  <p>语音输入 + 拍照标注，自动生成Excel</p>
 </div>
 
 <div class="container">
@@ -254,16 +96,12 @@
       <span id="voiceBtnInner">🎤 点击开始录音</span>
     </button>
     <div class="voice-status" id="voiceStatus">点击按钮开始说话，说完再次点击停止识别</div>
-    <textarea class="text-display" id="textDisplay"
-      placeholder="语音识别结果显示在这里，也可以手动输入或修改..."></textarea>
-    <div class="photo-label">📷 添加图片（最多3张，可点击标注）</div>
+    <textarea class="text-display" id="textDisplay" placeholder="语音识别结果显示在这里，也可以手动输入或修改..."></textarea>
+    <div class="photo-label">📷 添加图片（最多3张，可点击✏️标注）</div>
     <div class="photo-grid" id="photoGrid">
-      <div class="add-photo-btn" onclick="addPhoto()">
-        <span>＋</span><span>拍照/选图</span>
-      </div>
+      <div class="add-photo-btn" onclick="addPhoto()"><span>＋</span><span>拍照/选图</span></div>
     </div>
-    <input type="file" id="fileInput" accept="image/*"
-           multiple onchange="handleFileSelect(event)">
+    <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFileSelect(event)">
     <button class="add-row-btn" onclick="addRow()">✅ 添加到记录列表</button>
   </div>
 
@@ -272,57 +110,48 @@
       <h2>📋 已记录</h2>
       <span class="record-count" id="recordCount">0 行</span>
     </div>
-    <div id="recordsList">
-      <div class="empty-tip">暂无记录，添加第一行吧～</div>
-    </div>
+    <div id="recordsList"><div class="empty-tip">暂无记录，添加第一行吧～</div></div>
   </div>
 
-  <button class="export-btn" id="exportBtn" onclick="exportExcel()" disabled>
-    📊 导出 Excel 文件
-  </button>
+  <button class="export-btn" id="exportBtn" onclick="exportExcel()" disabled>📊 导出 Excel 文件</button>
 </div>
 
-<!-- 编辑器 -->
+<!-- 图片标注编辑器 -->
 <div class="editor-overlay" id="editorOverlay">
   <div class="editor-toolbar">
     <button class="tool-btn active" id="toolPen"    onclick="setTool('pen')">✏️ 画笔</button>
     <button class="tool-btn"        id="toolCircle" onclick="setTool('circle')">⭕ 圆圈</button>
     <button class="tool-btn"        id="toolArrow"  onclick="setTool('arrow')">➡️ 箭头</button>
     <button class="tool-btn"        id="toolText"   onclick="setTool('text')">📝 文字</button>
-    <div class="toolbar-divider"></div>
+    <div style="width:1px;height:28px;background:#444;margin:0 2px"></div>
     <div class="color-dot active" style="background:#ff3b30" onclick="setColor('#ff3b30')" data-color="#ff3b30"></div>
-    <div class="color-dot"        style="background:#ff9500" onclick="setColor('#ff9500')" data-color="#ff9500"></div>
     <div class="color-dot"        style="background:#ffcc00" onclick="setColor('#ffcc00')" data-color="#ffcc00"></div>
     <div class="color-dot"        style="background:#34c759" onclick="setColor('#34c759')" data-color="#34c759"></div>
     <div class="color-dot"        style="background:#007aff" onclick="setColor('#007aff')" data-color="#007aff"></div>
     <div class="color-dot"        style="background:#ffffff" onclick="setColor('#ffffff')" data-color="#ffffff"></div>
-    <div class="toolbar-divider"></div>
-    <span class="size-label">粗细</span>
+    <div style="width:1px;height:28px;background:#444;margin:0 2px"></div>
     <input class="size-slider" type="range" min="2" max="20" value="4" oninput="setSize(this.value)">
   </div>
-
   <div class="editor-canvas-wrap">
     <canvas id="editorCanvas"></canvas>
   </div>
-
   <div class="editor-actions">
     <button class="btn-cancel" onclick="closeEditor()">取消</button>
     <button class="btn-undo"   onclick="undoStroke()">↩ 撤销</button>
-    <button class="btn-clear"  onclick="clearAll()">🗑 清除</button>
+    <button class="btn-clear"  onclick="clearAnnotations()">🗑 清除</button>
     <button class="btn-save"   onclick="saveAnnotation()">✅ 保存</button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-/* ══ 讯飞配置 ══ */
+// ===================== 讯飞配置 =====================
 const XF_APPID      = 'ed958adf';
 const XF_API_KEY    = '21849580283bff759bb2a50f6ed0db2d';
 const XF_API_SECRET = 'Yjk3ZDBkNmVkMmRjZWNjNTQ5MTEzYjEy';
 
-/* ══ 全局状态 ══ */
+// ===================== 全局状态 =====================
 let records       = [];
 let currentImages = [];
 let isRecording   = false;
@@ -330,390 +159,379 @@ let mediaRecorder = null;
 let audioChunks   = [];
 let safetyTimer   = null;
 
-/* ══ 讯飞鉴权 ══ */
+// ===================== 编辑器状态 =====================
+let editingIndex  = -1;    // 正在编辑哪张图片
+let tool          = 'pen';
+let drawColor     = '#ff3b30';
+let drawSize      = 4;
+let strokes       = [];    // 所有笔画（用于撤销）
+let currentStroke = null;
+let isDrawing     = false;
+let baseImage     = null;  // 原图Image对象
+let canvas, ctx;
+let startX, startY;
+
+// ===================== 讯飞鉴权 =====================
 async function getXFUrl() {
-  const host        = 'iat-api.xfyun.cn';
-  const date        = new Date().toUTCString();
+  const host = 'iat-api.xfyun.cn';
+  const date = new Date().toUTCString();
   const requestLine = 'GET /v2/iat HTTP/1.1';
-  const signOrigin  = `host: ${host}\ndate: ${date}\n${requestLine}`;
+  const signOrigin = `host: ${host}\ndate: ${date}\n${requestLine}`;
   const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw', enc.encode(XF_API_SECRET),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-  );
-  const sig    = await crypto.subtle.sign('HMAC', key, enc.encode(signOrigin));
+  const key = await crypto.subtle.importKey('raw', enc.encode(XF_API_SECRET), { name:'HMAC', hash:'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(signOrigin));
   const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
   const authOrigin = `api_key="${XF_API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${sigB64}"`;
-  return `wss://${host}/v2/iat`
-    + `?authorization=${encodeURIComponent(btoa(authOrigin))}`
-    + `&date=${encodeURIComponent(date)}`
-    + `&host=${host}`;
+  return `wss://${host}/v2/iat?authorization=${encodeURIComponent(btoa(authOrigin))}&date=${encodeURIComponent(date)}&host=${host}`;
 }
 
-/* ══ PCM转换 ══ */
+// ===================== PCM转换 =====================
 function convertToPCM(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('读取音频失败'));
-    reader.onload  = (e) => {
-      let actx;
-      try { actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 }); }
-      catch (err) { return reject(new Error('AudioContext 初始化失败')); }
-      const t = setTimeout(() => { try{actx.close();}catch(_){} reject(new Error('音频解码超时')); }, 8000);
-      actx.decodeAudioData(
-        e.target.result,
+    reader.onload = (e) => {
+      let ctx2;
+      try { ctx2 = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 }); }
+      catch(err) { return reject(new Error('AudioContext失败')); }
+      const timeout = setTimeout(() => { try{ctx2.close();}catch(_){} reject(new Error('解码超时')); }, 8000);
+      ctx2.decodeAudioData(e.target.result,
         (buf) => {
-          clearTimeout(t);
+          clearTimeout(timeout);
           const pcm = buf.getChannelData(0);
           const i16 = new Int16Array(pcm.length);
-          for (let i = 0; i < pcm.length; i++)
-            i16[i] = Math.max(-32768, Math.min(32767, Math.round(pcm[i] * 32767)));
-          actx.close().catch(() => {});
-          resolve(new Blob([i16.buffer], { type: 'audio/L16' }));
+          for(let i=0;i<pcm.length;i++) i16[i]=Math.max(-32768,Math.min(32767,Math.round(pcm[i]*32767)));
+          ctx2.close().catch(()=>{});
+          resolve(new Blob([i16.buffer], {type:'audio/L16'}));
         },
-        (_err) => { clearTimeout(t); try{actx.close();}catch(_){} resolve(blob); }
+        (err) => { clearTimeout(timeout); try{ctx2.close();}catch(_){} resolve(blob); }
       );
     };
     reader.readAsArrayBuffer(blob);
   });
 }
 
-/* ══ 讯飞识别 ══ */
+// ===================== 讯飞识别 =====================
 function recognizeAudio(audioBlob) {
   return new Promise(async (resolve, reject) => {
     let url;
     try { url = await getXFUrl(); } catch(e) { return reject(new Error('鉴权失败')); }
     let pcmBlob;
     try { pcmBlob = await convertToPCM(audioBlob); } catch(e) { return reject(new Error('音频处理失败')); }
-    let pcmArr;
-    try { pcmArr = new Uint8Array(await pcmBlob.arrayBuffer()); } catch(e) { return reject(new Error('音频读取失败')); }
+    let pcmArray;
+    try { pcmArray = new Uint8Array(await pcmBlob.arrayBuffer()); } catch(e) { return reject(new Error('音频读取失败')); }
 
-    const segs = [];
+    const segments = [];
     let settled = false;
     const done = (t) => { if(settled)return; settled=true; resolve(t); };
     const fail = (e) => { if(settled)return; settled=true; reject(e); };
 
     let ws;
     try { ws = new WebSocket(url); } catch(e) { return fail(new Error('WebSocket创建失败')); }
-    const wt = setTimeout(() => { try{ws.close();}catch(_){} done(segs.join('')); }, 60000);
+
+    const wsTimeout = setTimeout(() => { try{ws.close();}catch(_){} done(segments.join('')); }, 60000);
 
     ws.onopen = () => {
       const FRAME = 1280; let offset=0, idx=0;
       const send = () => {
-        if (settled) return;
-        if (offset >= pcmArr.length) {
-          try { ws.send(JSON.stringify({ data:{ status:2, format:'audio/L16;rate=16000', encoding:'raw', audio:'' }})); } catch(_){}
+        if(settled) return;
+        if(offset >= pcmArray.length) {
+          try { ws.send(JSON.stringify({data:{status:2,format:'audio/L16;rate=16000',encoding:'raw',audio:''}})); } catch(_){}
           return;
         }
-        const chunk = pcmArr.slice(offset, offset+FRAME);
+        const chunk = pcmArray.slice(offset, offset+FRAME);
         const b64   = btoa(String.fromCharCode(...chunk));
-        const isFirst = idx === 0;
+        const isFirst = idx===0;
         const frame = {
-          ...(isFirst ? { common:{ app_id:XF_APPID }} : {}),
-          ...(isFirst ? { business:{ language:'zh_cn', domain:'iat', accent:'mandarin', vad_eos:5000, dwa:'wpgs' }} : {}),
-          data:{ status:isFirst?0:1, format:'audio/L16;rate=16000', encoding:'raw', audio:b64 }
+          ...(isFirst?{common:{app_id:XF_APPID}}:{}),
+          ...(isFirst?{business:{language:'zh_cn',domain:'iat',accent:'mandarin',vad_eos:5000,dwa:'wpgs'}}:{}),
+          data:{status:isFirst?0:1,format:'audio/L16;rate=16000',encoding:'raw',audio:b64}
         };
-        try { ws.send(JSON.stringify(frame)); } catch(_){ return; }
-        offset += FRAME; idx++;
-        setTimeout(send, 40);
+        try{ws.send(JSON.stringify(frame));}catch(_){return;}
+        offset+=FRAME; idx++;
+        setTimeout(send,40);
       };
       send();
     };
 
     ws.onmessage = (e) => {
-      let msg; try{ msg=JSON.parse(e.data); }catch(_){ return; }
-      if (msg.code !== 0) {
-        clearTimeout(wt); try{ws.close();}catch(_){}
-        fail(new Error(`讯飞错误(${msg.code}): ${msg.message}`)); return;
+      let msg; try{msg=JSON.parse(e.data);}catch(_){return;}
+      if(msg.code!==0){clearTimeout(wsTimeout);try{ws.close();}catch(_){} fail(new Error(`讯飞错误(${msg.code}):${msg.message}`));return;}
+      if(msg.data?.result){
+        const result=msg.data.result;
+        let text='';
+        (result.ws||[]).forEach(w=>w.cw.forEach(c=>{text+=c.w;}));
+        const pgs=result.pgs, rg=result.rg;
+        if(pgs==='rpl'&&Array.isArray(rg)&&rg.length===2) segments.splice(rg[0]-1,rg[1]-rg[0]+1,text);
+        else segments.push(text);
+        document.getElementById('textDisplay').value=segments.join('');
       }
-      if (msg.data?.result) {
-        const r = msg.data.result;
-        let text = '';
-        (r.ws||[]).forEach(w => w.cw.forEach(c => { text += c.w; }));
-        if (r.pgs==='rpl' && Array.isArray(r.rg) && r.rg.length===2)
-          segs.splice(r.rg[0]-1, r.rg[1]-r.rg[0]+1, text);
-        else segs.push(text);
-        document.getElementById('textDisplay').value = segs.join('');
-      }
-      if (msg.data?.status === 2) {
-        clearTimeout(wt); try{ws.close();}catch(_){}
-        done(segs.join(''));
-      }
+      if(msg.data?.status===2){clearTimeout(wsTimeout);try{ws.close();}catch(_){} done(segments.join(''));}
     };
-    ws.onerror = () => { clearTimeout(wt); fail(new Error('WebSocket连接失败')); };
-    ws.onclose = () => { clearTimeout(wt); done(segs.join('')); };
+    ws.onerror=()=>{clearTimeout(wsTimeout);fail(new Error('WebSocket连接失败'));};
+    ws.onclose=()=>{clearTimeout(wsTimeout);done(segments.join(''));};
   });
 }
 
-/* ══ 录音控制 ══ */
+// ===================== 录音 =====================
 async function toggleRecording() {
-  if (isRecording) stopRecording(); else await startRecording();
+  if(isRecording) stopRecording(); else await startRecording();
 }
 
 async function startRecording() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mime   = ['audio/webm;codecs=pcm','audio/webm','audio/ogg']
-                    .find(t => MediaRecorder.isTypeSupported(t)) || '';
-    mediaRecorder = new MediaRecorder(stream, mime ? { mimeType:mime } : {});
-    audioChunks   = [];
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const mime = ['audio/webm;codecs=pcm','audio/webm','audio/ogg'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+    mediaRecorder = new MediaRecorder(stream, mime?{mimeType:mime}:{});
+    audioChunks = [];
     document.getElementById('textDisplay').value = '';
 
-    mediaRecorder.ondataavailable = e => { if(e.data?.size>0) audioChunks.push(e.data); };
+    mediaRecorder.ondataavailable = e => { if(e.data&&e.data.size>0) audioChunks.push(e.data); };
     mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop());
+      stream.getTracks().forEach(t=>t.stop());
       setBtnProcessing();
       clearTimeout(safetyTimer);
-      safetyTimer = setTimeout(() => { showToast('识别超时，请重试'); setBtnIdle(); }, 35000);
+      safetyTimer = setTimeout(()=>{showToast('识别超时，请重试');setBtnIdle();},35000);
       try {
-        if (!audioChunks.length) throw new Error('未录到音频');
-        const blob   = new Blob(audioChunks, { type: mime||'audio/webm' });
+        if(!audioChunks.length) throw new Error('未录到音频');
+        const blob   = new Blob(audioChunks,{type:mime||'audio/webm'});
         const result = await recognizeAudio(blob);
         document.getElementById('textDisplay').value = result;
-        if (!result.trim()) showToast('未识别到内容，请重试');
+        if(!result.trim()) showToast('未识别到内容，请重试');
       } catch(err) {
-        showToast('识别失败：' + err.message);
-        document.getElementById('textDisplay').value = '';
+        showToast('识别失败：'+err.message);
+        document.getElementById('textDisplay').value='';
       } finally {
         clearTimeout(safetyTimer); setBtnIdle();
       }
     };
-    mediaRecorder.onerror = () => { showToast('录音出错'); isRecording=false; setBtnIdle(); };
+    mediaRecorder.onerror=()=>{showToast('录音出错');isRecording=false;setBtnIdle();};
     mediaRecorder.start(100);
-    isRecording = true;
+    isRecording=true;
     setBtnRecording();
   } catch(err) {
-    if (err.name==='NotAllowedError') showToast('请允许麦克风权限后重试');
-    else if (err.name==='NotFoundError') showToast('未找到麦克风设备');
-    else showToast('录音失败：' + err.message);
+    if(err.name==='NotAllowedError') showToast('请允许麦克风权限');
+    else showToast('录音失败：'+err.message);
     setBtnIdle();
   }
 }
 
 function stopRecording() {
-  if (mediaRecorder && isRecording) {
-    isRecording = false;
-    try { mediaRecorder.stop(); } catch(e) { setBtnIdle(); }
-  }
+  if(mediaRecorder&&isRecording){isRecording=false;try{mediaRecorder.stop();}catch(e){setBtnIdle();}}
 }
 
 function setBtnIdle() {
-  document.getElementById('voiceBtn').className = 'voice-btn';
-  document.getElementById('voiceBtnInner').innerHTML = '🎤 点击开始录音';
-  const s = document.getElementById('voiceStatus');
-  s.textContent = '点击按钮开始说话，说完再次点击停止识别';
-  s.className = 'voice-status';
+  document.getElementById('voiceBtn').className='voice-btn';
+  document.getElementById('voiceBtnInner').innerHTML='🎤 点击开始录音';
+  const s=document.getElementById('voiceStatus'); s.textContent='点击按钮开始说话，说完再次点击停止识别'; s.className='voice-status';
 }
 function setBtnRecording() {
-  document.getElementById('voiceBtn').className = 'voice-btn recording';
-  document.getElementById('voiceBtnInner').innerHTML =
-    `<div class="wave-bars">${Array(6).fill('<div class="wave-bar"></div>').join('')}</div><span>录音中… 点击停止</span>`;
-  const s = document.getElementById('voiceStatus');
-  s.textContent = '🔴 正在录音，说完后点击按钮停止';
-  s.className = 'voice-status recording';
+  document.getElementById('voiceBtn').className='voice-btn recording';
+  document.getElementById('voiceBtnInner').innerHTML=`<div class="wave-bars">${Array(6).fill('<div class="wave-bar"></div>').join('')}</div><span>录音中… 点击停止</span>`;
+  const s=document.getElementById('voiceStatus'); s.textContent='🔴 正在录音，说完后点击按钮停止'; s.className='voice-status recording';
 }
 function setBtnProcessing() {
-  document.getElementById('voiceBtn').className = 'voice-btn processing';
-  document.getElementById('voiceBtnInner').innerHTML = '⏳ 识别中，请稍候…';
-  const s = document.getElementById('voiceStatus');
-  s.textContent = '正在识别，请稍候...';
-  s.className = 'voice-status processing';
+  document.getElementById('voiceBtn').className='voice-btn processing';
+  document.getElementById('voiceBtnInner').innerHTML='⏳ 识别中，请稍候…';
+  const s=document.getElementById('voiceStatus'); s.textContent='正在识别，请稍候...'; s.className='voice-status processing';
 }
 
-/* ══ 图片压缩 ══ */
-function compressImage(file, maxSize, quality) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let w = img.width, h = img.height;
-        if (w > h && w > maxSize)     { h = h * maxSize / w; w = maxSize; }
-        else if (h > maxSize)          { w = w * maxSize / h; h = maxSize; }
-        canvas.width  = Math.round(w);
-        canvas.height = Math.round(h);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-/* ══ 图片处理 ══ */
+// ===================== 图片处理 =====================
 function addPhoto() {
-  if (currentImages.length >= 3) { showToast('最多添加3张图片'); return; }
+  if(currentImages.length>=3){showToast('最多添加3张');return;}
   document.getElementById('fileInput').click();
 }
 function handleFileSelect(e) {
-  for (const file of e.target.files) {
-    if (currentImages.length >= 3) break;
-    compressImage(file, 800, 0.75).then(compressed => {
-      currentImages.push(compressed);
-      renderPhotoGrid();
-    });
+  for(const file of e.target.files){
+    if(currentImages.length>=3) break;
+    const reader=new FileReader();
+    reader.onload=ev=>{currentImages.push(ev.target.result);renderPhotoGrid();};
+    reader.readAsDataURL(file);
   }
-  e.target.value = '';
+  e.target.value='';
 }
-function removePhoto(i) { currentImages.splice(i,1); renderPhotoGrid(); }
+function removePhoto(i){currentImages.splice(i,1);renderPhotoGrid();}
 
 function renderPhotoGrid() {
-  const grid = document.getElementById('photoGrid');
-  grid.innerHTML = '';
-  currentImages.forEach((src, i) => {
-    const d = document.createElement('div');
-    d.className = 'photo-item';
-    d.innerHTML = `
-      <img src="${src}" alt="图片${i+1}">
+  const grid=document.getElementById('photoGrid');
+  grid.innerHTML='';
+  currentImages.forEach((src,i)=>{
+    const d=document.createElement('div');
+    d.className='photo-item';
+    d.innerHTML=`<img src="${src}">
       <div class="btn-row">
-        <button class="edit-btn"   onclick="openEditor(${i})">✏️ 标注</button>
-        <button class="remove-btn" onclick="removePhoto(${i})">✕ 删除</button>
+        <button class="edit-btn"   onclick="openEditor(${i})">✏️标注</button>
+        <button class="remove-btn" onclick="removePhoto(${i})">✕删除</button>
       </div>`;
     grid.appendChild(d);
   });
-  if (currentImages.length < 3) {
-    const btn = document.createElement('div');
-    btn.className = 'add-photo-btn'; btn.onclick = addPhoto;
-    btn.innerHTML = '<span>＋</span><span>拍照/选图</span>';
+  if(currentImages.length<3){
+    const btn=document.createElement('div');
+    btn.className='add-photo-btn'; btn.onclick=addPhoto;
+    btn.innerHTML='<span>＋</span><span>拍照/选图</span>';
     grid.appendChild(btn);
   }
 }
 
-/* ══ 编辑器 ══ */
-let editingIndex=−1, editorTool='pen', drawColor='#ff3b30', drawSize=4;
-let strokes=[], currentStroke=null, isDrawing=false, baseImage=null;
-
-const edCanvas = document.getElementById('editorCanvas');
-const edCtx    = edCanvas.getContext('2d');
-
+// ===================== 图片标注编辑器 =====================
 function openEditor(index) {
-  editingIndex=index; strokes=[]; isDrawing=false; currentStroke=null;
+  editingIndex = index;
+  strokes      = [];
+  isDrawing    = false;
+  canvas = document.getElementById('editorCanvas');
+  ctx    = canvas.getContext('2d');
+
   const img = new Image();
   img.onload = () => {
     baseImage = img;
-    const wrap  = document.querySelector('.editor-canvas-wrap');
-    const maxW  = wrap.clientWidth  - 16;
-    const maxH  = wrap.clientHeight - 16;
+    // 适配屏幕
+    const maxW = window.innerWidth  - 20;
+    const maxH = window.innerHeight - 180;
     const scale = Math.min(maxW/img.width, maxH/img.height, 1);
-    edCanvas.width  = Math.round(img.width  * scale);
-    edCanvas.height = Math.round(img.height * scale);
-    redraw();
+    canvas.width  = img.width  * scale;
+    canvas.height = img.height * scale;
+    redrawCanvas();
     document.getElementById('editorOverlay').classList.add('show');
   };
   img.src = currentImages[index];
 }
 
-function redraw() {
-  edCtx.clearRect(0,0,edCanvas.width,edCanvas.height);
-  edCtx.drawImage(baseImage,0,0,edCanvas.width,edCanvas.height);
-  strokes.forEach(s => renderStroke(s));
+function redrawCanvas() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(baseImage,0,0,canvas.width,canvas.height);
+  strokes.forEach(stroke => drawStroke(stroke, false));
 }
 
-function renderStroke(s) {
-  edCtx.save();
-  edCtx.strokeStyle=s.color; edCtx.fillStyle=s.color;
-  edCtx.lineWidth=s.size; edCtx.lineCap='round'; edCtx.lineJoin='round';
-  if (s.type==='pen') {
-    if (s.points.length<2){edCtx.restore();return;}
-    edCtx.beginPath();
-    s.points.forEach((p,i)=>i===0?edCtx.moveTo(p.x,p.y):edCtx.lineTo(p.x,p.y));
-    edCtx.stroke();
-  } else if (s.type==='circle') {
-    const cx=(s.x1+s.x2)/2, cy=(s.y1+s.y2)/2;
-    const rx=Math.abs(s.x2-s.x1)/2, ry=Math.abs(s.y2-s.y1)/2;
-    if(rx<1||ry<1){edCtx.restore();return;}
-    edCtx.beginPath(); edCtx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); edCtx.stroke();
-  } else if (s.type==='arrow') {
-    const {x1,y1,x2,y2}=s;
-    const ang=Math.atan2(y2-y1,x2-x1), hLen=Math.max(14,s.size*4);
-    edCtx.beginPath(); edCtx.moveTo(x1,y1); edCtx.lineTo(x2,y2); edCtx.stroke();
-    edCtx.beginPath();
-    edCtx.moveTo(x2,y2);
-    edCtx.lineTo(x2-hLen*Math.cos(ang-Math.PI/7),y2-hLen*Math.sin(ang-Math.PI/7));
-    edCtx.lineTo(x2-hLen*Math.cos(ang+Math.PI/7),y2-hLen*Math.sin(ang+Math.PI/7));
-    edCtx.closePath(); edCtx.fill();
-  } else if (s.type==='text') {
-    edCtx.font=`bold ${s.size*5+10}px PingFang SC,sans-serif`;
-    edCtx.fillText(s.text,s.x1,s.y1);
+function drawStroke(stroke, isPreview) {
+  ctx.save();
+  ctx.strokeStyle = stroke.color;
+  ctx.fillStyle   = stroke.color;
+  ctx.lineWidth   = stroke.size;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+
+  if(stroke.type === 'pen') {
+    ctx.beginPath();
+    stroke.points.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+    ctx.stroke();
+  } else if(stroke.type === 'circle') {
+    const dx = stroke.x2 - stroke.x1, dy = stroke.y2 - stroke.y1;
+    const rx = Math.abs(dx)/2, ry = Math.abs(dy)/2;
+    const cx = stroke.x1 + dx/2, cy = stroke.y1 + dy/2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+    ctx.stroke();
+  } else if(stroke.type === 'arrow') {
+    const x1=stroke.x1,y1=stroke.y1,x2=stroke.x2,y2=stroke.y2;
+    const angle = Math.atan2(y2-y1, x2-x1);
+    const headLen = Math.max(15, stroke.size*4);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-headLen*Math.cos(angle-Math.PI/7), y2-headLen*Math.sin(angle-Math.PI/7));
+    ctx.lineTo(x2-headLen*Math.cos(angle+Math.PI/7), y2-headLen*Math.sin(angle+Math.PI/7));
+    ctx.closePath(); ctx.fill();
+  } else if(stroke.type === 'text') {
+    ctx.font = `bold ${stroke.size*5+10}px PingFang SC, sans-serif`;
+    ctx.fillText(stroke.text, stroke.x1, stroke.y1);
   }
-  edCtx.restore();
+  ctx.restore();
 }
 
 function getPos(e) {
-  const rect=edCanvas.getBoundingClientRect();
-  const scaleX=edCanvas.width/rect.width, scaleY=edCanvas.height/rect.height;
-  const src=e.touches?e.touches[0]:e;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const src = e.touches ? e.touches[0] : e;
   return { x:(src.clientX-rect.left)*scaleX, y:(src.clientY-rect.top)*scaleY };
 }
 
-function onPointerDown(e) {
+// 鼠标/触摸事件
+function onStart(e) {
   e.preventDefault();
-  const pos=getPos(e);
-  if (editorTool==='text') {
-    const txt=prompt('请输入文字：');
-    if(txt){strokes.push({type:'text',color:drawColor,size:drawSize,x1:pos.x,y1:pos.y,text:txt});redraw();}
+  const pos = getPos(e);
+  startX = pos.x; startY = pos.y;
+  if(tool==='text') {
+    const t = prompt('请输入文字：');
+    if(t) { strokes.push({type:'text',color:drawColor,size:drawSize,x1:pos.x,y1:pos.y,text:t}); redrawCanvas(); }
     return;
   }
-  isDrawing=true;
-  currentStroke={type:editorTool,color:drawColor,size:drawSize,x1:pos.x,y1:pos.y,x2:pos.x,y2:pos.y,points:[{x:pos.x,y:pos.y}]};
-}
-function onPointerMove(e) {
-  e.preventDefault();
-  if(!isDrawing||!currentStroke)return;
-  const pos=getPos(e);
-  if(editorTool==='pen') currentStroke.points.push({x:pos.x,y:pos.y});
-  else { currentStroke.x2=pos.x; currentStroke.y2=pos.y; }
-  redraw(); renderStroke(currentStroke);
-}
-function onPointerUp(e) {
-  e.preventDefault();
-  if(!isDrawing||!currentStroke)return;
-  isDrawing=false;
-  strokes.push({...currentStroke,points:currentStroke.points?[...currentStroke.points]:[]});
-  currentStroke=null; redraw();
+  isDrawing = true;
+  currentStroke = {
+    type: tool, color: drawColor, size: drawSize,
+    x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y,
+    points: [{x:pos.x,y:pos.y}]
+  };
 }
 
-edCanvas.addEventListener('mousedown',  onPointerDown, {passive:false});
-edCanvas.addEventListener('mousemove',  onPointerMove, {passive:false});
-edCanvas.addEventListener('mouseup',    onPointerUp,   {passive:false});
-edCanvas.addEventListener('mouseleave', onPointerUp,   {passive:false});
-edCanvas.addEventListener('touchstart', onPointerDown, {passive:false});
-edCanvas.addEventListener('touchmove',  onPointerMove, {passive:false});
-edCanvas.addEventListener('touchend',   onPointerUp,   {passive:false});
+function onMove(e) {
+  e.preventDefault();
+  if(!isDrawing||!currentStroke) return;
+  const pos = getPos(e);
+  if(tool==='pen') {
+    currentStroke.points.push({x:pos.x,y:pos.y});
+  } else {
+    currentStroke.x2 = pos.x;
+    currentStroke.y2 = pos.y;
+  }
+  redrawCanvas();
+  drawStroke(currentStroke, true);
+}
+
+function onEnd(e) {
+  e.preventDefault();
+  if(!isDrawing||!currentStroke) return;
+  isDrawing = false;
+  strokes.push({...currentStroke});
+  currentStroke = null;
+  redrawCanvas();
+}
+
+canvas = document.getElementById('editorCanvas');
+canvas.addEventListener('mousedown',  onStart, {passive:false});
+canvas.addEventListener('mousemove',  onMove,  {passive:false});
+canvas.addEventListener('mouseup',    onEnd,   {passive:false});
+canvas.addEventListener('touchstart', onStart, {passive:false});
+canvas.addEventListener('touchmove',  onMove,  {passive:false});
+canvas.addEventListener('touchend',   onEnd,   {passive:false});
 
 function setTool(t) {
-  editorTool=t;
-  ['pen','circle','arrow','text'].forEach(n=>{
-    const b=document.getElementById('tool'+n.charAt(0).toUpperCase()+n.slice(1));
-    if(b) b.classList.toggle('active',n===t);
+  tool = t;
+  ['pen','circle','arrow','text'].forEach(name => {
+    document.getElementById('tool'+name.charAt(0).toUpperCase()+name.slice(1)).classList.toggle('active', name===t);
   });
 }
 function setColor(c) {
-  drawColor=c;
-  document.querySelectorAll('.color-dot').forEach(d=>d.classList.toggle('active',d.dataset.color===c));
+  drawColor = c;
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.toggle('active', d.dataset.color===c));
 }
-function setSize(v)       { drawSize=parseInt(v); }
-function undoStroke()     { if(strokes.length){strokes.pop();redraw();}else showToast('没有可撤销的操作'); }
-function clearAll()       { strokes=[];redraw(); }
-function closeEditor()    { document.getElementById('editorOverlay').classList.remove('show'); }
+function setSize(s) { drawSize = parseInt(s); }
+function undoStroke() { if(strokes.length) { strokes.pop(); redrawCanvas(); } }
+function clearAnnotations() { strokes=[]; redrawCanvas(); }
+
+function closeEditor() { document.getElementById('editorOverlay').classList.remove('show'); }
+
 function saveAnnotation() {
-  currentImages[editingIndex]=edCanvas.toDataURL('image/jpeg',0.92);
-  closeEditor(); renderPhotoGrid(); showToast('标注已保存 ✅');
+  // 把canvas内容保存回currentImages
+  currentImages[editingIndex] = canvas.toDataURL('image/jpeg', 0.92);
+  closeEditor();
+  renderPhotoGrid();
+  showToast('标注已保存 ✅');
 }
 
-/* ══ 添加行 ══ */
+// ===================== 添加行 =====================
 function addRow() {
   const text=document.getElementById('textDisplay').value.trim();
   if(!text&&currentImages.length===0){showToast('请先录音或添加图片');return;}
   records.push({text,images:[...currentImages]});
   document.getElementById('textDisplay').value='';
-  currentImages=[]; renderPhotoGrid(); renderRecordsList();
+  currentImages=[];
+  renderPhotoGrid();
+  renderRecordsList();
   showToast(`已添加第 ${records.length} 行 ✅`);
 }
 
-/* ══ 记录列表 ══ */
+// ===================== 记录列表 =====================
 function renderRecordsList() {
   const list=document.getElementById('recordsList');
   document.getElementById('recordCount').textContent=`${records.length} 行`;
@@ -728,63 +546,32 @@ function renderRecordsList() {
         <button class="delete-row-btn" onclick="deleteRow(${i})">🗑 删除</button>
       </div>
       <div class="record-text">${row.text||'（无文字）'}</div>
-      ${row.images.length?`<div class="record-images">${row.images.map(s=>`<img src="${s}" alt="图">`).join('')}</div>`:''}`;
+      ${row.images.length?`<div class="record-images">${row.images.map(s=>`<img src="${s}">`).join('')}</div>`:''}`;
     list.appendChild(d);
   });
 }
 function deleteRow(i){records.splice(i,1);renderRecordsList();showToast('已删除');}
 
-/* ══ 导出Excel ══ */
+// ===================== 导出Excel =====================
 async function exportExcel() {
-  if (!records.length) return;
-  document.getElementById('exportBtn').disabled = true;
-  showToast('正在生成 Excel...');
-
+  if(!records.length) return;
+  showToast('正在生成Excel，请稍候...');
+  document.getElementById('exportBtn').disabled=true;
   try {
-    // ① 优先前端生成（纯文字，极速）
-    if (typeof XLSX !== 'undefined') {
-      const wb   = XLSX.utils.book_new();
-      const data = [['语音文字','图片1','图片2','图片3']];
-      records.forEach((row,i) => {
-        data.push([
-          row.text||'',
-          row.images[0] ? `[第${i+1}行-图片1]` : '',
-          row.images[1] ? `[第${i+1}行-图片2]` : '',
-          row.images[2] ? `[第${i+1}行-图片3]` : '',
-        ]);
-      });
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      ws['!cols'] = [{wch:40},{wch:20},{wch:20},{wch:20}];
-      XLSX.utils.book_append_sheet(wb, ws, '记录');
-      XLSX.writeFile(wb, `语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'')}.xlsx`);
-      showToast('导出成功（纯文字版）📊');
-      return;
-    }
-
-    // ② 回退到服务器生成（含图片嵌入）
-    showToast('正在上传图片生成Excel，请稍候...');
-    const res = await fetch('/generate-excel', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rows: records })
-    });
-    if (!res.ok) throw new Error('服务器错误 ' + res.status);
-    const blob = await res.blob();
-    const a    = document.createElement('a');
-    a.href     = URL.createObjectURL(blob);
-    a.download = `语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'')}.xlsx`;
+    const res=await fetch('/generate-excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:records})});
+    if(!res.ok) throw new Error('服务器错误 '+res.status);
+    const blob=await res.blob();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'')}.xlsx`;
     a.click();
-    showToast('导出成功（含图片版）📊');
-
-  } catch(err) {
-    showToast('导出失败：' + err.message);
-  } finally {
-    document.getElementById('exportBtn').disabled = false;
-  }
+    showToast('导出成功 📊');
+  } catch(err){showToast('导出失败：'+err.message);}
+  finally{document.getElementById('exportBtn').disabled=false;}
 }
 
-/* ══ Toast ══ */
-function showToast(msg) {
+// ===================== Toast =====================
+function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2500);
