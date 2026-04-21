@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="记录表">
+  <meta name="theme-color" content="#4472C4">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-192.png">
   <title>语音拍照记录表</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -106,13 +113,16 @@
   </div>
 
   <div class="records-card">
-    <div class="records-header">
-      <h2>📋 已记录</h2>
+  <div class="records-header">
+    <h2>📋 已记录</h2>
+    <div style="display:flex;align-items:center;gap:8px">
       <span class="record-count" id="recordCount">0 行</span>
+      <button onclick="clearAllRecords()" style="border:none;background:none;color:#e74c3c;font-size:13px;cursor:pointer;padding:2px 4px">清空</button>
     </div>
-    <div id="recordsList"><div class="empty-tip">暂无记录，添加第一行吧～</div></div>
   </div>
-
+  
+  <div id="recordsList"></div>
+   
   <button class="export-btn" id="exportBtn" onclick="exportExcel()" disabled>📊 导出 Excel 文件</button>
 </div>
 
@@ -152,12 +162,39 @@ const XF_API_KEY    = '21849580283bff759bb2a50f6ed0db2d';
 const XF_API_SECRET = 'Yjk3ZDBkNmVkMmRjZWNjNTQ5MTEzYjEy';
 
 // ===================== 全局状态 =====================
+/* ══ 全局状态 ══ */
 let records       = [];
 let currentImages = [];
 let isRecording   = false;
 let mediaRecorder = null;
 let audioChunks   = [];
 let safetyTimer   = null;
+
+// 从本地存储恢复数据
+function loadFromStorage() {
+  try {
+    const saved = localStorage.getItem('voiceExcelRecords');
+    if (saved) {
+      records = JSON.parse(saved);
+      renderRecordsList();
+      showToast(`已恢复 ${records.length} 行记录`);
+    }
+  } catch(e) {
+    console.error('恢复数据失败', e);
+  }
+}
+
+// 保存到本地存储
+function saveToStorage() {
+  try {
+    localStorage.setItem('voiceExcelRecords', JSON.stringify(records));
+  } catch(e) {
+    console.error('保存数据失败', e);
+  }
+}
+
+// 页面加载完成后恢复数据
+window.addEventListener('load', loadFromStorage);
 
 // ===================== 编辑器状态 =====================
 let editingIndex  = -1;    // 正在编辑哪张图片
@@ -528,6 +565,7 @@ function addRow() {
   currentImages=[];
   renderPhotoGrid();
   renderRecordsList();
+  saveToStorage();
   showToast(`已添加第 ${records.length} 行 ✅`);
 }
 
@@ -550,8 +588,15 @@ function renderRecordsList() {
     list.appendChild(d);
   });
 }
-function deleteRow(i){records.splice(i,1);renderRecordsList();showToast('已删除');}
-
+function deleteRow(i){records.splice(i,1);renderRecordsList();saveToStorage();showToast('已删除');}
+function clearAllRecords() {
+  if (!records.length) return;
+  if (!confirm(`确定清空全部 ${records.length} 行记录？`)) return;
+  records = [];
+  renderRecordsList();
+  saveToStorage();
+  showToast('已清空所有记录');
+}
 // ===================== 导出Excel =====================
 async function exportExcel() {
   if(!records.length) return;
@@ -576,6 +621,11 @@ function showToast(msg){
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2500);
 }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(console.error);
+  }
 </script>
 </body>
 </html>

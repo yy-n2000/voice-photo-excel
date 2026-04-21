@@ -1,7 +1,8 @@
 const express = require('express');
 const ExcelJS = require('exceljs');
 const cors    = require('cors');
-const sizeOf  = require('image-size');
+//const sizeOf  = require('image-size');
+const { imageSize } = require('image-size');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -64,14 +65,17 @@ app.post('/generate-excel', async (req, res) => {
             if (!base64Raw || typeof base64Raw !== 'string') continue;
 
             // ===== 校验base64 =====
-            const match = base64Raw.match(/^data:image\/(\w+);base64,/);
-            if (!match) {
-              console.warn(`第${rowIndex}行图片格式非法`);
+            if (!base64Raw.includes('base64,')) {
+              console.warn(`第${rowIndex}行图片格式非法: 缺少 base64 标识`);
               continue;
             }
 
-            const ext = match[1] === 'png' ? 'png' : 'jpeg';
-            const base64 = base64Raw.replace(/^data:image\/\w+;base64,/, '');
+            // 【修复 1】更稳健的截取方式：直接以 'base64,' 为界切分，提取后半部分纯数据
+            const base64 = base64Raw.split('base64,')[1];
+            
+            // 提取扩展名 (兼容 image/png, image/jpeg 等)
+            const extMatch = base64Raw.match(/^data:image\/([a-zA-Z0-9.-]+);/);
+            const ext = (extMatch && extMatch[1].toLowerCase() === 'png') ? 'png' : 'jpeg';
 
             const col = j + 2;
 
@@ -86,11 +90,18 @@ app.post('/generate-excel', async (req, res) => {
 
             try {
               const buffer = Buffer.from(base64, 'base64');
-              const size   = sizeOf(buffer);
+              
+              // 【修复 2】拦截空数据图片
+              if (buffer.length === 0) {
+                throw new Error('图片 base64 数据为空');
+              }
+
+              const size = imageSize(buffer);
               imgW = size.width;
               imgH = size.height;
             } catch (e) {
-              console.warn(`第${rowIndex}行图片尺寸解析失败`);
+              // 【修复 3】打印具体错误原因，比如 "unsupported file type"
+              console.warn(`第${rowIndex}行图片尺寸解析失败，原因:`, e.message);
             }
 
             // ===== 单元格尺寸 =====
