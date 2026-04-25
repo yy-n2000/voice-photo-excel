@@ -1,0 +1,35 @@
+* [33m8ad9bb6[m[33m ([m[1;31morigin/main[m[33m)[m Delete node_modules directory
+* [33me83bf95[m feat: PWA support + localStorage persistence
+* [33m25ad50c[m feat: PWA support + localStorage persistence
+* [33ma59443c[m feat: PWA support + localStorage persistence
+* [33md46da4f[m feat: PWA support + localStorage persistence
+[31m|[m * [33m117f69e[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m feat: PWA support + localStorage persistence
+[31m|[m[31m/[m  
+* [33mb4ddeee[m feat: PWA support + localStorage persistence
+* [33ma2391ae[m fix: mobile camera+gallery, editor layout safe area
+* [33maa228df[m perf: compress images, frontend xlsx export, fix mobile layout
+* [33m7b553a7[m fix: mobile camera+gallery, editor layout safe area
+* [33m7e34cb9[m fix: mobile camera+gallery, editor layout safe area
+* [33mb579330[m fix: mobile camera+gallery, editor layout safe area
+* [33m5587a7d[m fix: mobile camera+gallery, editor layout safe area
+* [33m0a5ba17[m fix: mobile camera+gallery, editor layout safe area
+* [33mb004217[m fix: mobile camera+gallery, editor layout safe area
+* [33m7def6dd[m fix: mobile camera+gallery, editor layout safe area
+* [33mf399d68[m fix: mobile camera+gallery, editor layout safe area
+* [33m340ada0[m fix: mobile camera+gallery, editor layout safe area
+* [33m2c88a47[m fix: mobile camera+gallery, editor layout safe area
+* [33md19e337[m fix: mobile camera+gallery, editor layout safe area
+* [33mf5fc5d7[m fix: mobile camera+gallery, editor layout safe area
+* [33m6cd5504[m feat: add image annotation editor and fix image size in excel
+* [33mdbd4b9b[m fix: pin iconv-lite and exceljs versions
+* [33ma42dcb8[m fix: explicit debug version and remove xlsx
+* [33mc9f69db[m fix: remove package-lock.json let server regenerate
+* [33ma95df1e[m fix: lock dependency versions
+* [33maf30b9f[m fix: robust audio handling with full error coverage
+* [33me1bff88[m fix: rewrite speech recognition logic
+* [33m0354f01[m upgrade: xunfei speech recognition
+* [33m7a27e66[m sync package-lock.json
+* [33me9a34ca[m fix: use npm install instead of npm ci
+* [33mc2761d6[m add nixpacks config
+* [33m7efe058[m fix: add start script and dependencies
+* [33me42418e[m first commit
