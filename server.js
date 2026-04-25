@@ -12,11 +12,13 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
 // ===== 单位换算 =====
+// 列宽单位：字符宽度，1字符 ≈ 7px（96dpi）
 const colWidthToPx = (width) => width * 7;
-const rowHeightToPx = (height) => height * 1.33;
+// 行高单位：磅(pt)，1pt = 96/72 px ≈ 1.3333
+const rowHeightToPx = (height) => height * (96 / 72);
 
-// 留白
-const PADDING = 8;
+// 留白加大到 16px，防止图片贴近单元格边缘时 Excel 渲染溢出
+const PADDING = 16;
 
 app.post('/generate-excel', async (req, res) => {
   try {
@@ -129,11 +131,11 @@ app.post('/generate-excel', async (req, res) => {
                 col: col - 1 + offsetX / cellW,
                 row: rowIndex - 1 + offsetY / cellH
               },
-              ext: {
-                width: finalW,
-                height: finalH
+              br: {
+                col: col - 1 + (offsetX + finalW) / cellW,
+                row: rowIndex - 1 + (offsetY + finalH) / cellH
               },
-              editAs: 'oneCell'
+              editAs: 'oneCell' // 随单元格移动，但不随单元格改变原有比例
             });
 
           } catch (imgErr) {

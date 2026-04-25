@@ -10,6 +10,9 @@
   <meta name="theme-color" content="#4472C4">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icon-192.png">
+  <!-- 浏览器版 ExcelJS + FileSaver，前端直接生成 xlsx，无需上传到服务器 -->
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <title>语音拍照记录表</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -170,27 +173,45 @@ let mediaRecorder = null;
 let audioChunks   = [];
 let safetyTimer   = null;
 
-// 从本地存储恢复数据
-function loadFromStorage() {
-  try {
-    const saved = localStorage.getItem('voiceExcelRecords');
-    if (saved) {
-      records = JSON.parse(saved);
-      renderRecordsList();
-      showToast(`已恢复 ${records.length} 行记录`);
-    }
-  } catch(e) {
-    console.error('恢复数据失败', e);
-  }
+// ===================== IndexedDB 存储 =====================
+const DB_NAME = 'voiceExcelDB', DB_VERSION = 1, STORE_NAME = 'records';
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    if (db) { resolve(db); return; }
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror   = e => reject(e.target.error);
+  });
 }
 
-// 保存到本地存储
-function saveToStorage() {
+async function saveToStorage() {
   try {
-    localStorage.setItem('voiceExcelRecords', JSON.stringify(records));
-  } catch(e) {
-    console.error('保存数据失败', e);
-  }
+    const idb   = await openDB();
+    const tx    = idb.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.clear();
+    records.forEach((row, i) => store.put({ id: i, ...row }));
+    tx.onerror = e => console.error('IndexedDB 写入失败', e.target.error);
+  } catch(e) { console.error('保存数据失败', e); }
+}
+
+async function loadFromStorage() {
+  try {
+    const idb = await openDB();
+    const tx  = idb.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).getAll();
+    req.onsuccess = () => {
+      const rows = req.result;
+      if (rows && rows.length) {
+        records = rows.sort((a, b) => a.id - b.id).map(({ id, ...rest }) => rest);
+        renderRecordsList();
+        showToast(`已恢复 ${records.length} 行记录`);
+      }
+    };
+  } catch(e) { console.error('恢复数据失败', e); }
 }
 
 // 页面加载完成后恢复数据
@@ -597,22 +618,158 @@ function clearAllRecords() {
   saveToStorage();
   showToast('已清空所有记录');
 }
-// ===================== 导出Excel =====================
+// ===================== 导出Excel（纯前端，无需服务器）=====================
+
+// EMU 换算：Excel 内部坐标系，1px = 9525 EMU
+const EMU = 9525;
+const PADDING_PX = 10; // 单元格内边距 px
+
+// 列宽(字符单位) → px：Excel 默认字符宽约 7px
+const colCharToPx = (w) => Math.round(w * 7);
+// 行高(pt单位) → px：1pt = 96/72 px
+const rowPtToPx   = (h) => Math.round(h * 96 / 72);
+
+// 把 base64 dataUrl 转成 ArrayBuffer
+function dataUrlToBuffer(dataUrl) {
+  const base64 = dataUrl.split('base64,')[1];
+  const bin    = atob(base64);
+  const arr    = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr.buffer;
+}
+
+// 获取图片原始尺寸
+function getImageSize(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload  = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve({ width: 100, height: 100 });
+    img.src = dataUrl;
+  });
+}
+
+// 累计前 n 行的像素高度（用于计算 nativeRowOff）
+// rowHeights: Map<rowIndex(1-based), heightPt>
+function accRowPx(worksheet, fromRow, toRow) {
+  let total = 0;
+  for (let r = fromRow; r <= toRow; r++) {
+    const row = worksheet.getRow(r);
+    total += rowPtToPx(row.height || 15);
+  }
+  return total;
+}
+
 async function exportExcel() {
-  if(!records.length) return;
+  if (!records.length) return;
   showToast('正在生成Excel，请稍候...');
-  document.getElementById('exportBtn').disabled=true;
+  document.getElementById('exportBtn').disabled = true;
+
   try {
-    const res=await fetch('/generate-excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:records})});
-    if(!res.ok) throw new Error('服务器错误 '+res.status);
-    const blob=await res.blob();
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download=`语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'')}.xlsx`;
-    a.click();
+    const ExcelJS   = window.ExcelJS;
+    const workbook  = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('记录');
+
+    // ===== 列宽 =====
+    const COL_WIDTHS = [35, 22, 22, 22]; // 字符单位
+    COL_WIDTHS.forEach((w, i) => { worksheet.getColumn(i + 1).width = w; });
+
+    // ===== 表头（第1行）=====
+    const header = worksheet.getRow(1);
+    header.values    = ['语音文字', '图片1', '图片2', '图片3'];
+    header.height    = 22;
+    header.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+    header.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+    header.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // 数据行高（pt），固定值，用于 EMU 计算
+    const ROW_HEIGHT_PT = 90;
+
+    // ===== 数据行 =====
+    for (let i = 0; i < records.length; i++) {
+      const rowData  = records[i];
+      const rowIndex = i + 2;   // 第2行开始
+      const excelRow = worksheet.getRow(rowIndex);
+      excelRow.height = ROW_HEIGHT_PT;
+
+      // 文本
+      const textCell = worksheet.getCell(rowIndex, 1);
+      textCell.value     = rowData.text || '';
+      textCell.alignment = { vertical: 'middle', wrapText: true };
+      textCell.font      = { size: 11 };
+
+      // 图片
+      if (Array.isArray(rowData.images)) {
+        for (let j = 0; j < Math.min(rowData.images.length, 3); j++) {
+          const dataUrl = rowData.images[j];
+          if (!dataUrl || !dataUrl.includes('base64,')) continue;
+
+          try {
+            const extMatch = dataUrl.match(/^data:image\/([a-zA-Z0-9.-]+);/);
+            const ext      = (extMatch && extMatch[1].toLowerCase() === 'png') ? 'png' : 'jpeg';
+            const col      = j + 2; // 列号(1-based)
+
+            // 图片原始尺寸
+            const { width: imgW, height: imgH } = await getImageSize(dataUrl);
+
+            // 单元格可用尺寸（px）
+            const cellW = colCharToPx(COL_WIDTHS[col - 1]);
+            const cellH = rowPtToPx(ROW_HEIGHT_PT);
+            const maxW  = cellW - PADDING_PX * 2;
+            const maxH  = cellH - PADDING_PX * 2;
+
+            // 等比缩放，不超过单元格
+            const ratio  = Math.min(maxW / imgW, maxH / imgH, 1);
+            const finalW = Math.floor(imgW * ratio);
+            const finalH = Math.floor(imgH * ratio);
+
+            // 居中偏移（px → EMU）
+            const offXpx = Math.floor((cellW - finalW) / 2);
+            const offYpx = Math.floor((cellH - finalH) / 2);
+
+            const imageId = workbook.addImage({
+              buffer: dataUrlToBuffer(dataUrl),
+              extension: ext
+            });
+
+            // 用 nativeCol/nativeRow + EMU 偏移精确定位
+            
+            worksheet.addImage(imageId, {
+  tl: {
+    nativeCol:    col - 1,
+    nativeColOff: offXpx * EMU,
+    nativeRow:    rowIndex - 1,
+    nativeRowOff: offYpx * EMU
+  },
+  br: {
+    nativeCol:    col - 1,
+    nativeColOff: (offXpx + finalW) * EMU,
+    nativeRow:    rowIndex - 1,
+    nativeRowOff: (offYpx + finalH) * EMU
+  },
+  editAs: 'twoCell' // 强绑定在单元格边界内
+});
+          } catch (imgErr) {
+            console.error(`第${rowIndex}行图片处理失败`, imgErr);
+          }
+        }
+      }
+    }
+
+    // ===== 生成并下载 =====
+    const buffer   = await workbook.xlsx.writeBuffer();
+    const blob     = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    const filename = `语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '')}.xlsx`;
+    saveAs(blob, filename);
+
     showToast('导出成功 📊');
-  } catch(err){showToast('导出失败：'+err.message);}
-  finally{document.getElementById('exportBtn').disabled=false;}
+  } catch (err) {
+    console.error('导出失败', err);
+    showToast('导出失败：' + err.message);
+  } finally {
+    document.getElementById('exportBtn').disabled = false;
+  }
 }
 
 // ===================== Toast =====================
