@@ -126,6 +126,7 @@
   <button class="export-btn" id="exportBtn" onclick="exportExcel()" disabled>📊 导出 Excel 文件</button>
 </div>
 
+<!-- 图片标注编辑器 -->
 <div class="editor-overlay" id="editorOverlay">
   <div class="editor-toolbar">
     <button class="tool-btn active" id="toolPen"    onclick="setTool('pen')">✏️ 画笔</button>
@@ -169,7 +170,7 @@ let mediaRecorder = null;
 let audioChunks   = [];
 let safetyTimer   = null;
 
-// ===================== IndexedDB 存储 =====================
+// ===================== IndexedDB 存储（替代 localStorage，容量大得多）=====================
 const DB_NAME    = 'voiceExcelDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'records';
@@ -205,16 +206,23 @@ function compressImage(dataUrl, maxSize = 1200, quality = 0.75) {
   });
 }
 
-// 【修复：直接存已压缩的数据】
+// 保存到 IndexedDB（写入前先压缩所有图片）
 async function saveToStorage() {
   try {
     const idb = await openDB();
+
+    // 压缩当前 records 里的图片
+    const compressed = await Promise.all(records.map(async (row) => ({
+      ...row,
+      images: await Promise.all((row.images || []).map(img => compressImage(img)))
+    })));
+
     const tx    = idb.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
 
     // 先清空旧数据，再逐行写入
     store.clear();
-    records.forEach((row, i) => store.put({ id: i, ...row }));
+    compressed.forEach((row, i) => store.put({ id: i, ...row }));
 
     tx.oncomplete = () => {};
     tx.onerror    = (e) => console.error('IndexedDB 写入失败', e.target.error);
@@ -432,27 +440,15 @@ function addPhoto() {
   if(currentImages.length>=3){showToast('最多添加3张');return;}
   document.getElementById('fileInput').click();
 }
-
-// 【修复：选图后立即压缩图片】
-async function handleFileSelect(e) {
+function handleFileSelect(e) {
   for(const file of e.target.files){
-    if(currentImages.length >= 3) break;
-    
-    // 使用 Promise 包装 FileReader
-    const dataUrl = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => resolve(ev.target.result);
-      reader.readAsDataURL(file);
-    });
-
-    // 立即执行压缩，然后再放入数组
-    const compressedDataUrl = await compressImage(dataUrl);
-    currentImages.push(compressedDataUrl);
-    renderPhotoGrid();
+    if(currentImages.length>=3) break;
+    const reader=new FileReader();
+    reader.onload=ev=>{currentImages.push(ev.target.result);renderPhotoGrid();};
+    reader.readAsDataURL(file);
   }
-  e.target.value = '';
+  e.target.value='';
 }
-
 function removePhoto(i){currentImages.splice(i,1);renderPhotoGrid();}
 
 function renderPhotoGrid() {
@@ -614,8 +610,8 @@ function clearAnnotations() { strokes=[]; redrawCanvas(); }
 
 function closeEditor() { document.getElementById('editorOverlay').classList.remove('show'); }
 
-// 【修复：设定标注导出的图片质量与压缩函数保持一致】
 function saveAnnotation() {
+  // 把canvas内容保存回currentImages，质量与 compressImage 保持一致
   currentImages[editingIndex] = canvas.toDataURL('image/jpeg', 0.75);
   closeEditor();
   renderPhotoGrid();
@@ -623,10 +619,12 @@ function saveAnnotation() {
 }
 
 // ===================== 添加行 =====================
-function addRow() {
+async function addRow() {
   const text=document.getElementById('textDisplay').value.trim();
   if(!text&&currentImages.length===0){showToast('请先录音或添加图片');return;}
-  records.push({text,images:[...currentImages]});
+  // ✅ 修复：push 前先压缩图片，避免原始大图发给服务器
+  const compressedImages = await Promise.all(currentImages.map(img => compressImage(img)));
+  records.push({text,images:compressedImages});
   document.getElementById('textDisplay').value='';
   currentImages=[];
   renderPhotoGrid();
@@ -693,7 +691,6 @@ function showToast(msg){
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(console.error);
   }
-  
 </script>
 </body>
 </html>
