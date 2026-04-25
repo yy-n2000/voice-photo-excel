@@ -622,7 +622,7 @@ function saveAnnotation() {
 async function addRow() {
   const text=document.getElementById('textDisplay').value.trim();
   if(!text&&currentImages.length===0){showToast('请先录音或添加图片');return;}
-  // ✅ 修复：push 前先压缩图片，避免原始大图发给服务器
+  // 压缩后再存入 records，避免原始大图占用内存和发给服务器
   const compressedImages = await Promise.all(currentImages.map(img => compressImage(img)));
   records.push({text,images:compressedImages});
   document.getElementById('textDisplay').value='';
