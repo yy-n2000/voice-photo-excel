@@ -10,9 +10,6 @@
   <meta name="theme-color" content="#4472C4">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icon-192.png">
-  <!-- 浏览器版 ExcelJS + FileSaver，前端直接生成 xlsx，无需上传到服务器 -->
-  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <title>语音拍照记录表</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -173,45 +170,89 @@ let mediaRecorder = null;
 let audioChunks   = [];
 let safetyTimer   = null;
 
-// ===================== IndexedDB 存储 =====================
-const DB_NAME = 'voiceExcelDB', DB_VERSION = 1, STORE_NAME = 'records';
+// ===================== IndexedDB 存储（替代 localStorage，容量大得多）=====================
+const DB_NAME    = 'voiceExcelDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'records';
 let db = null;
 
 function openDB() {
   return new Promise((resolve, reject) => {
     if (db) { resolve(db); return; }
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror   = e => reject(e.target.error);
+    req.onupgradeneeded = (e) => {
+      e.target.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    req.onerror   = (e) => reject(e.target.error);
   });
 }
 
-async function saveToStorage() {
-  try {
-    const idb   = await openDB();
-    const tx    = idb.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    store.clear();
-    records.forEach((row, i) => store.put({ id: i, ...row }));
-    tx.onerror = e => console.error('IndexedDB 写入失败', e.target.error);
-  } catch(e) { console.error('保存数据失败', e); }
+// 图片压缩：把 base64 缩小到最长边 1200px，质量 0.75，节省约 70-90% 空间
+function compressImage(dataUrl, maxSize = 1200, quality = 0.75) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const w = Math.round(img.width  * scale);
+      const h = Math.round(img.height * scale);
+      const cvs = document.createElement('canvas');
+      cvs.width = w; cvs.height = h;
+      cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(cvs.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl); // 失败就原样保留
+    img.src = dataUrl;
+  });
 }
 
-async function loadFromStorage() {
+// 保存到 IndexedDB（写入前先压缩所有图片）
+async function saveToStorage() {
   try {
     const idb = await openDB();
-    const tx  = idb.transaction(STORE_NAME, 'readonly');
-    const req = tx.objectStore(STORE_NAME).getAll();
+
+    // 压缩当前 records 里的图片
+    const compressed = await Promise.all(records.map(async (row) => ({
+      ...row,
+      images: await Promise.all((row.images || []).map(img => compressImage(img)))
+    })));
+
+    const tx    = idb.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+
+    // 先清空旧数据，再逐行写入
+    store.clear();
+    compressed.forEach((row, i) => store.put({ id: i, ...row }));
+
+    tx.oncomplete = () => {};
+    tx.onerror    = (e) => console.error('IndexedDB 写入失败', e.target.error);
+  } catch(e) {
+    console.error('保存数据失败', e);
+  }
+}
+
+// 从 IndexedDB 读取数据
+async function loadFromStorage() {
+  try {
+    const idb   = await openDB();
+    const tx    = idb.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req   = store.getAll();
     req.onsuccess = () => {
       const rows = req.result;
       if (rows && rows.length) {
-        records = rows.sort((a, b) => a.id - b.id).map(({ id, ...rest }) => rest);
+        // 按 id 排序，去掉 id 字段还原成原始格式
+        records = rows
+          .sort((a, b) => a.id - b.id)
+          .map(({ id, ...rest }) => rest);
         renderRecordsList();
         showToast(`已恢复 ${records.length} 行记录`);
       }
     };
-  } catch(e) { console.error('恢复数据失败', e); }
+    req.onerror = (e) => console.error('读取数据失败', e.target.error);
+  } catch(e) {
+    console.error('恢复数据失败', e);
+  }
 }
 
 // 页面加载完成后恢复数据
@@ -618,135 +659,22 @@ function clearAllRecords() {
   saveToStorage();
   showToast('已清空所有记录');
 }
-// ===================== 导出Excel（纯前端，无需服务器）=====================
-
-// 单元格像素尺寸（这是传给 ExcelJS ext 的值，也是 canvas 画布大小）
-// 经过实测校准的换算系数
-const CELL_W_PX = 140;  // 图片列宽对应的像素（约 22字符宽）
-const CELL_H_PX = 120;  // 行高 90pt 对应的像素
-const PADDING   = 6;    // 画布内留白
-
-// 把原始 dataUrl 用 canvas 缩放成固定尺寸（CELL_W_PX × CELL_H_PX），保持比例居中
-// 返回新的 jpeg dataUrl，尺寸绝对不超过单元格
-function fitImageToCell(dataUrl) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const cvs = document.createElement('canvas');
-      cvs.width  = CELL_W_PX;
-      cvs.height = CELL_H_PX;
-      const ctx = cvs.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, CELL_W_PX, CELL_H_PX);
-
-      const maxW = CELL_W_PX - PADDING * 2;
-      const maxH = CELL_H_PX - PADDING * 2;
-      const ratio = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
-      const dw = Math.floor(img.naturalWidth  * ratio);
-      const dh = Math.floor(img.naturalHeight * ratio);
-      const dx = Math.floor((CELL_W_PX - dw) / 2);
-      const dy = Math.floor((CELL_H_PX - dh) / 2);
-
-      ctx.drawImage(img, dx, dy, dw, dh);
-      resolve(cvs.toDataURL('image/jpeg', 0.92));
-    };
-    img.onerror = () => resolve(dataUrl);
-    img.src = dataUrl;
-  });
-}
-
-// base64 dataUrl → ArrayBuffer
-function dataUrlToBuffer(dataUrl) {
-  const base64 = dataUrl.split('base64,')[1];
-  const bin    = atob(base64);
-  const arr    = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-  return arr.buffer;
-}
-
+// ===================== 导出Excel =====================
 async function exportExcel() {
-  if (!records.length) return;
+  if(!records.length) return;
   showToast('正在生成Excel，请稍候...');
-  document.getElementById('exportBtn').disabled = true;
-
+  document.getElementById('exportBtn').disabled=true;
   try {
-    const ExcelJS   = window.ExcelJS;
-    const workbook  = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('记录');
-
-    // ===== 列宽 =====
-    worksheet.getColumn(1).width = 35;
-    worksheet.getColumn(2).width = 22;
-    worksheet.getColumn(3).width = 22;
-    worksheet.getColumn(4).width = 22;
-
-    // ===== 表头（第1行）=====
-    const header = worksheet.getRow(1);
-    header.values    = ['语音文字', '图片1', '图片2', '图片3'];
-    header.height    = 22;
-    header.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
-    header.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
-    header.alignment = { vertical: 'middle', horizontal: 'center' };
-
-    // ===== 数据行 =====
-    for (let i = 0; i < records.length; i++) {
-      const rowData  = records[i];
-      const rowIndex = i + 2;
-      const excelRow = worksheet.getRow(rowIndex);
-      excelRow.height = 90; // pt
-
-      // 文本
-      const textCell = worksheet.getCell(rowIndex, 1);
-      textCell.value     = rowData.text || '';
-      textCell.alignment = { vertical: 'middle', wrapText: true };
-      textCell.font      = { size: 11 };
-
-      // 图片：先用 canvas 缩放到固定尺寸，再嵌入 Excel
-      if (Array.isArray(rowData.images)) {
-        for (let j = 0; j < Math.min(rowData.images.length, 3); j++) {
-          const dataUrl = rowData.images[j];
-          if (!dataUrl || !dataUrl.includes('base64,')) continue;
-
-          try {
-            const col = j + 2;
-
-            // canvas 缩放：输出固定 CELL_W_PX × CELL_H_PX 的 jpeg
-            const fitted = await fitImageToCell(dataUrl);
-
-            const imageId = workbook.addImage({
-              buffer:    dataUrlToBuffer(fitted),
-              extension: 'jpeg'
-            });
-
-            // ext 传像素，ExcelJS 内部自动 ×9525 转 EMU
-            // 图片尺寸 == 单元格尺寸，tl 直接对齐单元格左上角，不需要偏移
-            worksheet.addImage(imageId, {
-              tl:     { col: col - 1, row: rowIndex - 1 },
-              ext:    { width: CELL_W_PX, height: CELL_H_PX },
-              editAs: 'absolute'
-            });
-          } catch (imgErr) {
-            console.error(`第${rowIndex}行图片处理失败`, imgErr);
-          }
-        }
-      }
-    }
-
-    // ===== 生成并下载 =====
-    const buffer   = await workbook.xlsx.writeBuffer();
-    const blob     = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-    const filename = `语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '')}.xlsx`;
-    saveAs(blob, filename);
-
+    const res=await fetch('/generate-excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:records})});
+    if(!res.ok) throw new Error('服务器错误 '+res.status);
+    const blob=await res.blob();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'')}.xlsx`;
+    a.click();
     showToast('导出成功 📊');
-  } catch (err) {
-    console.error('导出失败', err);
-    showToast('导出失败：' + err.message);
-  } finally {
-    document.getElementById('exportBtn').disabled = false;
-  }
+  } catch(err){showToast('导出失败：'+err.message);}
+  finally{document.getElementById('exportBtn').disabled=false;}
 }
 
 // ===================== Toast =====================
@@ -759,7 +687,6 @@ function showToast(msg){
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(console.error);
-    
   }
 </script>
 </body>
