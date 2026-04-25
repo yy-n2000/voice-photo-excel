@@ -188,21 +188,42 @@ function openDB() {
   });
 }
 
-// 图片压缩：把 base64 缩小到最长边 1200px，质量 0.75，节省约 70-90% 空间
-function compressImage(dataUrl, maxSize = 1200, quality = 0.75) {
-  return new Promise((resolve) => {
+// 1. 全新的压缩函数：使用 ObjectURL，拒绝内存暴涨
+function compressImage(file, maxSize = 1200, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    // 确保传入的是文件对象
+    if (!file || !file.type.startsWith('image/')) {
+      return reject(new Error('格式错误：非图片文件'));
+    }
+
     const img = new Image();
+    // 【核心修复】：创建一个指向底层文件的URL，完全不占用 JS 内存
+    const objectUrl = URL.createObjectURL(file);
+
     img.onload = () => {
+      // 图片加载后，立刻释放这个URL指针
+      URL.revokeObjectURL(objectUrl); 
+      
       const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
       const w = Math.round(img.width  * scale);
       const h = Math.round(img.height * scale);
+      
       const cvs = document.createElement('canvas');
-      cvs.width = w; cvs.height = h;
+      cvs.width = w; 
+      cvs.height = h;
       cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+      
+      // 导出为极小的 Base64 (JPEG格式)
       resolve(cvs.toDataURL('image/jpeg', quality));
     };
-    img.onerror = () => resolve(dataUrl); // 失败就原样保留
-    img.src = dataUrl;
+
+    img.onerror = (err) => {
+      URL.revokeObjectURL(objectUrl);
+      // 【核心修复】：如果手机端依然解析失败，直接报错拦截，绝对不能返回原图！
+      reject(new Error('图片解析失败'));
+    };
+
+    img.src = objectUrl;
   });
 }
 
@@ -440,14 +461,28 @@ function addPhoto() {
   if(currentImages.length>=3){showToast('最多添加3张');return;}
   document.getElementById('fileInput').click();
 }
-function handleFileSelect(e) {
-  for(const file of e.target.files){
-    if(currentImages.length>=3) break;
-    const reader=new FileReader();
-    reader.onload=ev=>{currentImages.push(ev.target.result);renderPhotoGrid();};
-    reader.readAsDataURL(file);
+// 2. 配合修改的选图逻辑
+async function handleFileSelect(e) {
+  const files = e.target.files;
+  if (!files || files.length === 0) return;
+
+  // 手机端处理可能需要一两秒，给用户一个提示
+  showToast('📸 正在压缩处理图片...');
+
+  for(const file of files){
+    if(currentImages.length >= 3) break;
+    
+    try {
+      // 【核心修复】：这里直接把 file 文件对象传给压缩函数，而不是 FileReader 读出来的字符串
+      const compressedDataUrl = await compressImage(file);
+      currentImages.push(compressedDataUrl);
+      renderPhotoGrid();
+    } catch(err) {
+      console.error(err);
+      showToast('❌ 某张图片处理失败，已跳过');
+    }
   }
-  e.target.value='';
+  e.target.value = ''; // 清空 input
 }
 function removePhoto(i){currentImages.splice(i,1);renderPhotoGrid();}
 
