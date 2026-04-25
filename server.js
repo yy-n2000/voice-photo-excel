@@ -131,11 +131,11 @@ app.post('/generate-excel', async (req, res) => {
                 col: col - 1 + offsetX / cellW,
                 row: rowIndex - 1 + offsetY / cellH
               },
-              br: {
-                col: col - 1 + (offsetX + finalW) / cellW,
-                row: rowIndex - 1 + (offsetY + finalH) / cellH
+              ext: {
+                width: finalW,
+                height: finalH
               },
-              editAs: 'oneCell' // 随单元格移动，但不随单元格改变原有比例
+              editAs: 'absolute'
             });
 
           } catch (imgErr) {

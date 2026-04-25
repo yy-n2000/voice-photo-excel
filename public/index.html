@@ -187,31 +187,66 @@ function openDB() {
   });
 }
 
+// 压缩图片 base64，避免超出 IndexedDB 存储限制
+function compressImage(dataUrl, maxPx = 800, quality = 0.75) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(maxPx / img.width, maxPx / img.height, 1);
+      const w = Math.round(img.width  * scale);
+      const h = Math.round(img.height * scale);
+      const cvs = document.createElement('canvas');
+      cvs.width = w; cvs.height = h;
+      cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(cvs.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl); // 失败则原样返回
+    img.src = dataUrl;
+  });
+}
+
 async function saveToStorage() {
   try {
+    // 先把每行图片压缩，再存入 IndexedDB
+    const compressedRecords = await Promise.all(
+      records.map(async (row) => ({
+        ...row,
+        images: await Promise.all((row.images || []).map(img => compressImage(img)))
+      }))
+    );
+
     const idb   = await openDB();
     const tx    = idb.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
-    store.clear();
-    records.forEach((row, i) => store.put({ id: i, ...row }));
-    tx.onerror = e => console.error('IndexedDB 写入失败', e.target.error);
+
+    await new Promise((resolve, reject) => {
+      const clearReq = store.clear();
+      clearReq.onsuccess = () => {
+        compressedRecords.forEach((row, i) => store.put({ id: i, ...row }));
+        tx.oncomplete = () => resolve();
+        tx.onerror    = e  => reject(e.target.error);
+        tx.onabort    = e  => reject(new Error('IndexedDB 事务中止'));
+      };
+      clearReq.onerror = e => reject(e.target.error);
+    });
   } catch(e) { console.error('保存数据失败', e); }
 }
 
 async function loadFromStorage() {
   try {
-    const idb = await openDB();
-    const tx  = idb.transaction(STORE_NAME, 'readonly');
-    const req = tx.objectStore(STORE_NAME).getAll();
-    req.onsuccess = () => {
-      const rows = req.result;
-      if (rows && rows.length) {
-        records = rows.sort((a, b) => a.id - b.id).map(({ id, ...rest }) => rest);
-        renderRecordsList();
-        showToast(`已恢复 ${records.length} 行记录`);
-      }
-    };
-  } catch(e) { console.error('恢复数据失败', e); }
+    const idb  = await openDB();
+    const rows = await new Promise((resolve, reject) => {
+      const tx  = idb.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror   = e  => reject(e.target.error);
+    });
+    if (rows.length) {
+      records = rows.sort((a, b) => a.id - b.id).map(({ id, ...rest }) => rest);
+      renderRecordsList();
+      showToast(`已恢复 ${records.length} 行记录 ✅`);
+    }
+  } catch(e) { console.error('恢复数据失败', e); showToast('数据恢复失败，请检查存储权限'); }
 }
 
 // 页面加载完成后恢复数据
@@ -732,22 +767,17 @@ async function exportExcel() {
             });
 
             // 用 nativeCol/nativeRow + EMU 偏移精确定位
-            
+            // nativeCol/nativeRow 是 0-based
             worksheet.addImage(imageId, {
-  tl: {
-    nativeCol:    col - 1,
-    nativeColOff: offXpx * EMU,
-    nativeRow:    rowIndex - 1,
-    nativeRowOff: offYpx * EMU
-  },
-  br: {
-    nativeCol:    col - 1,
-    nativeColOff: (offXpx + finalW) * EMU,
-    nativeRow:    rowIndex - 1,
-    nativeRowOff: (offYpx + finalH) * EMU
-  },
-  editAs: 'twoCell' // 强绑定在单元格边界内
-});
+              tl: {
+                nativeCol:    col - 1,
+                nativeColOff: offXpx * EMU,
+                nativeRow:    rowIndex - 1,
+                nativeRowOff: offYpx * EMU
+              },
+              ext:    { width: finalW, height: finalH },
+              editAs: 'absolute'
+            });
           } catch (imgErr) {
             console.error(`第${rowIndex}行图片处理失败`, imgErr);
           }
