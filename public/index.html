@@ -611,18 +611,20 @@ function clearAnnotations() { strokes=[]; redrawCanvas(); }
 function closeEditor() { document.getElementById('editorOverlay').classList.remove('show'); }
 
 function saveAnnotation() {
-  // 把canvas内容保存回currentImages
-  currentImages[editingIndex] = canvas.toDataURL('image/jpeg', 0.92);
+  // 把canvas内容保存回currentImages，质量与 compressImage 保持一致
+  currentImages[editingIndex] = canvas.toDataURL('image/jpeg', 0.75);
   closeEditor();
   renderPhotoGrid();
   showToast('标注已保存 ✅');
 }
 
 // ===================== 添加行 =====================
-function addRow() {
+async function addRow() {
   const text=document.getElementById('textDisplay').value.trim();
   if(!text&&currentImages.length===0){showToast('请先录音或添加图片');return;}
-  records.push({text,images:[...currentImages]});
+  // ✅ 修复：push 前先压缩图片，避免原始大图发给服务器
+  const compressedImages = await Promise.all(currentImages.map(img => compressImage(img)));
+  records.push({text,images:compressedImages});
   document.getElementById('textDisplay').value='';
   currentImages=[];
   renderPhotoGrid();

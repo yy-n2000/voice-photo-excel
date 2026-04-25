@@ -1,8 +1,11 @@
 const express = require('express');
 const ExcelJS = require('exceljs');
 const cors    = require('cors');
-//const sizeOf  = require('image-size');
 const { imageSize } = require('image-size');
+
+// sharp 为可选依赖：装了就用，没装跳过（不影响基本功能）
+let sharp;
+try { sharp = require('sharp'); } catch (_) { sharp = null; }
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -17,8 +20,31 @@ const colWidthToPx = (width) => width * 7;
 // 行高单位：磅(pt)，1pt = 96/72 px ≈ 1.3333
 const rowHeightToPx = (height) => height * (96 / 72);
 
-// 留白加大到 16px，防止图片贴近单元格边缘时 Excel 渲染溢出
+// 留白 16px，防止图片贴近单元格边缘时 Excel 渲染溢出
 const PADDING = 16;
+
+// ===== 服务端兜底压缩 =====
+// 即使前端漏传大图，也能在服务器侧缩到 1200px 以内，保护内存和 Excel 体积
+async function compressBuffer(buf, ext) {
+  if (!sharp) return { buf, ext };
+  try {
+    const img  = sharp(buf);
+    const meta = await img.metadata();
+    const max  = 1200;
+    let pipeline = img;
+    if (meta.width > max || meta.height > max) {
+      pipeline = pipeline.resize({
+        width: max, height: max,
+        fit: 'inside', withoutEnlargement: true
+      });
+    }
+    const outBuf = await pipeline.jpeg({ quality: 75 }).toBuffer();
+    return { buf: outBuf, ext: 'jpeg' };
+  } catch (e) {
+    console.warn('sharp 压缩失败，使用原图:', e.message);
+    return { buf, ext };
+  }
+}
 
 app.post('/generate-excel', async (req, res) => {
   try {
@@ -55,9 +81,9 @@ app.post('/generate-excel', async (req, res) => {
 
       // ===== 文本 =====
       const textCell = worksheet.getCell(rowIndex, 1);
-      textCell.value = rowData.text || '';
+      textCell.value     = rowData.text || '';
       textCell.alignment = { vertical: 'middle', wrapText: true };
-      textCell.font = { size: 11 };
+      textCell.font      = { size: 11 };
 
       // ===== 图片处理 =====
       if (Array.isArray(rowData.images)) {
@@ -66,45 +92,47 @@ app.post('/generate-excel', async (req, res) => {
             const base64Raw = rowData.images[j];
             if (!base64Raw || typeof base64Raw !== 'string') continue;
 
-            // ===== 校验base64 =====
+            // 校验 base64 格式
             if (!base64Raw.includes('base64,')) {
               console.warn(`第${rowIndex}行图片格式非法: 缺少 base64 标识`);
               continue;
             }
 
-            // 【修复 1】更稳健的截取方式：直接以 'base64,' 为界切分，提取后半部分纯数据
-            const base64 = base64Raw.split('base64,')[1];
-            
-            // 提取扩展名 (兼容 image/png, image/jpeg 等)
+            // 截取纯 base64 数据
+            const rawBase64 = base64Raw.split('base64,')[1];
+
+            // 提取扩展名（兼容 image/png、image/jpeg 等）
             const extMatch = base64Raw.match(/^data:image\/([a-zA-Z0-9.-]+);/);
-            const ext = (extMatch && extMatch[1].toLowerCase() === 'png') ? 'png' : 'jpeg';
+            const origExt  = (extMatch && extMatch[1].toLowerCase() === 'png') ? 'png' : 'jpeg';
 
             const col = j + 2;
 
-            const imageId = workbook.addImage({
-              base64,
-              extension: ext
-            });
+            // ===== 解码 & 服务端兜底压缩 =====
+            let buf = Buffer.from(rawBase64, 'base64');
+
+            if (buf.length === 0) {
+              console.warn(`第${rowIndex}行第${j+1}张图片 base64 数据为空，跳过`);
+              continue;
+            }
+
+            const { buf: finalBuf, ext: finalExt } = await compressBuffer(buf, origExt);
 
             // ===== 获取图片尺寸 =====
             let imgW = 100;
             let imgH = 100;
-
             try {
-              const buffer = Buffer.from(base64, 'base64');
-              
-              // 【修复 2】拦截空数据图片
-              if (buffer.length === 0) {
-                throw new Error('图片 base64 数据为空');
-              }
-
-              const size = imageSize(buffer);
+              const size = imageSize(finalBuf);
               imgW = size.width;
               imgH = size.height;
             } catch (e) {
-              // 【修复 3】打印具体错误原因，比如 "unsupported file type"
-              console.warn(`第${rowIndex}行图片尺寸解析失败，原因:`, e.message);
+              console.warn(`第${rowIndex}行图片尺寸解析失败:`, e.message);
             }
+
+            // ===== 注册图片到 workbook =====
+            const imageId = workbook.addImage({
+              base64:    finalBuf.toString('base64'),
+              extension: finalExt
+            });
 
             // ===== 单元格尺寸 =====
             const colWidth  = worksheet.getColumn(col).width || 20;
@@ -113,16 +141,14 @@ app.post('/generate-excel', async (req, res) => {
             const cellW = colWidthToPx(colWidth);
             const cellH = rowHeightToPx(rowHeight);
 
-            // ===== 计算缩放 =====
+            // ===== 等比缩放，居中放置 =====
             const maxW = cellW - PADDING * 3;
             const maxH = cellH - PADDING * 3;
 
-            const ratio = Math.min(maxW / imgW, maxH / imgH, 1);
-
+            const ratio  = Math.min(maxW / imgW, maxH / imgH, 1);
             const finalW = imgW * ratio;
             const finalH = imgH * ratio;
 
-            // ===== 居中 =====
             const offsetX = (cellW - finalW) / 2;
             const offsetY = (cellH - finalH) / 2;
 
@@ -132,7 +158,7 @@ app.post('/generate-excel', async (req, res) => {
                 row: rowIndex - 1 + offsetY / cellH
               },
               ext: {
-                width: finalW,
+                width:  finalW,
                 height: finalH
               },
               editAs: 'absolute'
@@ -149,15 +175,8 @@ app.post('/generate-excel', async (req, res) => {
     // ===== 导出 =====
     const buffer = await workbook.xlsx.writeBuffer();
 
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename="record.xlsx"'
-    );
-
+    res.setHeader('Content-Type',        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="record.xlsx"');
     res.send(buffer);
 
   } catch (err) {
@@ -165,7 +184,6 @@ app.post('/generate-excel', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`服务器运行在端口 ${PORT}`);
