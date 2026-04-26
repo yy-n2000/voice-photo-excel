@@ -88,7 +88,6 @@
     .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.75); color:white; padding:10px 22px; border-radius:24px; font-size:14px; display:none; z-index:9999; white-space:nowrap; }
     .toast.show { display:block; }
   </style>
-  <!-- 浏览器版 ExcelJS：前端直接生成 xlsx，不走服务器 -->
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 </head>
@@ -445,8 +444,8 @@ async function handleFileSelect(e) {
 
     const reader = new FileReader();
     reader.onload = async (ev) => {
-      // 核心修复：在这里立刻调用 compressImage 压缩原图！
-      const compressedDataUrl = await compressImage(ev.target.result);
+      // 选图时立刻压缩（最长边800px，质量0.8），与addRow保持一致
+      const compressedDataUrl = await compressImage(ev.target.result, 800, 0.8);
       currentImages.push(compressedDataUrl);
       renderPhotoGrid();
     };
@@ -624,10 +623,12 @@ function saveAnnotation() {
 }
 
 // ===================== 添加行 =====================
-function addRow() {
+async function addRow() {
   const text=document.getElementById('textDisplay').value.trim();
   if(!text&&currentImages.length===0){showToast('请先录音或添加图片');return;}
-  records.push({text,images:[...currentImages]});
+  // 添加时压缩图片（最长边800px，质量0.8），减少存储和传输体积
+  const compressed = await Promise.all(currentImages.map(img => compressImage(img, 800, 0.8)));
+  records.push({text, images: compressed});
   document.getElementById('textDisplay').value='';
   currentImages=[];
   renderPhotoGrid();
@@ -666,108 +667,68 @@ function clearAllRecords() {
 }
 // ===================== 导出Excel（纯前端，不走服务器）=====================
 
-// 把图片用 canvas 缩放到固定尺寸，保持比例、白底居中
-// 输出固定 140×120px 的 jpeg，直接等于单元格尺寸，绝对不溢出
-const CELL_IMG_W = 140;
-const CELL_IMG_H = 120;
-const CELL_PAD   = 6;
-
-function fitImageToCell(dataUrl) {
-  return new Promise((resolve) => {
+// canvas 把图片缩放到单元格尺寸（140×120px 白底居中），ext 传 px，ExcelJS 自动换算
+function fitToCell(dataUrl) {
+  const W=140, H=120, P=6;
+  return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
-      const cvs = document.createElement('canvas');
-      cvs.width = CELL_IMG_W; cvs.height = CELL_IMG_H;
-      const ctx = cvs.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, CELL_IMG_W, CELL_IMG_H);
-      const ratio = Math.min((CELL_IMG_W - CELL_PAD*2) / img.naturalWidth,
-                             (CELL_IMG_H - CELL_PAD*2) / img.naturalHeight);
-      const dw = Math.floor(img.naturalWidth  * ratio);
-      const dh = Math.floor(img.naturalHeight * ratio);
-      const dx = Math.floor((CELL_IMG_W - dw) / 2);
-      const dy = Math.floor((CELL_IMG_H - dh) / 2);
-      ctx.drawImage(img, dx, dy, dw, dh);
-      resolve(cvs.toDataURL('image/jpeg', 0.92));
+      const c = document.createElement('canvas');
+      c.width=W; c.height=H;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+      const r = Math.min((W-P*2)/img.naturalWidth, (H-P*2)/img.naturalHeight);
+      const dw=Math.floor(img.naturalWidth*r), dh=Math.floor(img.naturalHeight*r);
+      ctx.drawImage(img, Math.floor((W-dw)/2), Math.floor((H-dh)/2), dw, dh);
+      resolve(c.toDataURL('image/jpeg', 0.9));
     };
     img.onerror = () => resolve(dataUrl);
     img.src = dataUrl;
   });
 }
-
-function dataUrlToBuffer(dataUrl) {
-  const b64 = dataUrl.split('base64,')[1];
-  const bin = atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+function toBuffer(dataUrl) {
+  const bin=atob(dataUrl.split('base64,')[1]);
+  const arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
   return arr.buffer;
 }
-
 async function exportExcel() {
-  if (!records.length) return;
+  if(!records.length) return;
   showToast('正在生成Excel，请稍候...');
-  document.getElementById('exportBtn').disabled = true;
+  document.getElementById('exportBtn').disabled=true;
   try {
-    const workbook  = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('记录');
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('记录');
+    [35,22,22,22].forEach((w,i)=>{ ws.getColumn(i+1).width=w; });
+    const h=ws.getRow(1);
+    h.values=['语音文字','图片1','图片2','图片3'];
+    h.height=22; h.font={bold:true,color:{argb:'FFFFFFFF'},size:12};
+    h.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF4472C4'}};
+    h.alignment={vertical:'middle',horizontal:'center'};
 
-    worksheet.getColumn(1).width = 35;
-    worksheet.getColumn(2).width = 22;
-    worksheet.getColumn(3).width = 22;
-    worksheet.getColumn(4).width = 22;
-
-    const header = worksheet.getRow(1);
-    header.values    = ['语音文字', '图片1', '图片2', '图片3'];
-    header.height    = 22;
-    header.font      = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
-    header.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
-    header.alignment = { vertical: 'middle', horizontal: 'center' };
-
-    for (let i = 0; i < records.length; i++) {
-      const rowData  = records[i];
-      const rowIndex = i + 2;
-      const excelRow = worksheet.getRow(rowIndex);
-      excelRow.height = 90;
-
-      const textCell = worksheet.getCell(rowIndex, 1);
-      textCell.value     = rowData.text || '';
-      textCell.alignment = { vertical: 'middle', wrapText: true };
-      textCell.font      = { size: 11 };
-
-      if (Array.isArray(rowData.images)) {
-        for (let j = 0; j < Math.min(rowData.images.length, 3); j++) {
-          const dataUrl = rowData.images[j];
-          if (!dataUrl || !dataUrl.includes('base64,')) continue;
+    for(let i=0;i<records.length;i++){
+      const row=records[i], ri=i+2, er=ws.getRow(ri);
+      er.height=90;
+      const tc=ws.getCell(ri,1);
+      tc.value=row.text||''; tc.alignment={vertical:'middle',wrapText:true}; tc.font={size:11};
+      if(Array.isArray(row.images)){
+        for(let j=0;j<Math.min(row.images.length,3);j++){
+          const url=row.images[j];
+          if(!url||!url.includes('base64,')) continue;
           try {
-            // canvas 缩放成固定尺寸，图片==单元格大小，不会溢出
-            const fitted  = await fitImageToCell(dataUrl);
-            const imageId = workbook.addImage({
-              buffer: dataUrlToBuffer(fitted),
-              extension: 'jpeg'
-            });
-            const col = j + 2;
-            worksheet.addImage(imageId, {
-              tl:     { col: col - 1, row: rowIndex - 1 },
-              ext:    { width: CELL_IMG_W, height: CELL_IMG_H },
-              editAs: 'absolute'
-            });
-          } catch(e) { console.error('图片处理失败', e); }
+            const fitted=await fitToCell(url);
+            const id=wb.addImage({buffer:toBuffer(fitted),extension:'jpeg'});
+            ws.addImage(id,{tl:{col:j+1,row:ri-1},ext:{width:140,height:120},editAs:'absolute'});
+          } catch(e){ console.error('图片跳过',e); }
         }
       }
     }
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob   = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-    saveAs(blob, `语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'')}.xlsx`);
+    const buf=await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
+      `语音拍照记录_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'')}.xlsx`);
     showToast('导出成功 📊');
-  } catch(err) {
-    showToast('导出失败：' + err.message);
-    console.error(err);
-  } finally {
-    document.getElementById('exportBtn').disabled = false;
-  }
+  } catch(e){ showToast('导出失败：'+e.message); console.error(e); }
+  finally{ document.getElementById('exportBtn').disabled=false; }
 }
 
 // ===================== Toast =====================
