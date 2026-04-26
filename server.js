@@ -1,6 +1,7 @@
 const express = require('express');
 const ExcelJS = require('exceljs');
 const cors    = require('cors');
+//const sizeOf  = require('image-size');
 const { imageSize } = require('image-size');
 
 const app  = express();
@@ -16,7 +17,7 @@ const colWidthToPx = (width) => width * 7;
 // 行高单位：磅(pt)，1pt = 96/72 px ≈ 1.3333
 const rowHeightToPx = (height) => height * (96 / 72);
 
-// 留白 16px，防止图片贴近单元格边缘时 Excel 渲染溢出
+// 留白加大到 16px，防止图片贴近单元格边缘时 Excel 渲染溢出
 const PADDING = 16;
 
 app.post('/generate-excel', async (req, res) => {
@@ -54,9 +55,9 @@ app.post('/generate-excel', async (req, res) => {
 
       // ===== 文本 =====
       const textCell = worksheet.getCell(rowIndex, 1);
-      textCell.value     = rowData.text || '';
+      textCell.value = rowData.text || '';
       textCell.alignment = { vertical: 'middle', wrapText: true };
-      textCell.font      = { size: 11 };
+      textCell.font = { size: 11 };
 
       // ===== 图片处理 =====
       if (Array.isArray(rowData.images)) {
@@ -65,45 +66,45 @@ app.post('/generate-excel', async (req, res) => {
             const base64Raw = rowData.images[j];
             if (!base64Raw || typeof base64Raw !== 'string') continue;
 
-            // 校验 base64 格式
+            // ===== 校验base64 =====
             if (!base64Raw.includes('base64,')) {
               console.warn(`第${rowIndex}行图片格式非法: 缺少 base64 标识`);
               continue;
             }
 
-            // 截取纯 base64 数据
-            const rawBase64 = base64Raw.split('base64,')[1];
-
-            // 提取扩展名（兼容 image/png、image/jpeg 等）
+            // 【修复 1】更稳健的截取方式：直接以 'base64,' 为界切分，提取后半部分纯数据
+            const base64 = base64Raw.split('base64,')[1];
+            
+            // 提取扩展名 (兼容 image/png, image/jpeg 等)
             const extMatch = base64Raw.match(/^data:image\/([a-zA-Z0-9.-]+);/);
             const ext = (extMatch && extMatch[1].toLowerCase() === 'png') ? 'png' : 'jpeg';
 
             const col = j + 2;
 
-            // ===== 解码 =====
-            const buf = Buffer.from(rawBase64, 'base64');
-
-            if (buf.length === 0) {
-              console.warn(`第${rowIndex}行第${j+1}张图片 base64 数据为空，跳过`);
-              continue;
-            }
+            const imageId = workbook.addImage({
+              base64,
+              extension: ext
+            });
 
             // ===== 获取图片尺寸 =====
             let imgW = 100;
             let imgH = 100;
+
             try {
-              const size = imageSize(buf);
+              const buffer = Buffer.from(base64, 'base64');
+              
+              // 【修复 2】拦截空数据图片
+              if (buffer.length === 0) {
+                throw new Error('图片 base64 数据为空');
+              }
+
+              const size = imageSize(buffer);
               imgW = size.width;
               imgH = size.height;
             } catch (e) {
-              console.warn(`第${rowIndex}行图片尺寸解析失败:`, e.message);
+              // 【修复 3】打印具体错误原因，比如 "unsupported file type"
+              console.warn(`第${rowIndex}行图片尺寸解析失败，原因:`, e.message);
             }
-
-            // ===== 注册图片到 workbook =====
-            const imageId = workbook.addImage({
-              base64:    rawBase64,
-              extension: ext
-            });
 
             // ===== 单元格尺寸 =====
             const colWidth  = worksheet.getColumn(col).width || 20;
@@ -112,14 +113,16 @@ app.post('/generate-excel', async (req, res) => {
             const cellW = colWidthToPx(colWidth);
             const cellH = rowHeightToPx(rowHeight);
 
-            // ===== 等比缩放，居中放置 =====
+            // ===== 计算缩放 =====
             const maxW = cellW - PADDING * 3;
             const maxH = cellH - PADDING * 3;
 
-            const ratio  = Math.min(maxW / imgW, maxH / imgH, 1);
+            const ratio = Math.min(maxW / imgW, maxH / imgH, 1);
+
             const finalW = imgW * ratio;
             const finalH = imgH * ratio;
 
+            // ===== 居中 =====
             const offsetX = (cellW - finalW) / 2;
             const offsetY = (cellH - finalH) / 2;
 
@@ -129,7 +132,7 @@ app.post('/generate-excel', async (req, res) => {
                 row: rowIndex - 1 + offsetY / cellH
               },
               ext: {
-                width:  finalW,
+                width: finalW,
                 height: finalH
               },
               editAs: 'absolute'
@@ -146,8 +149,15 @@ app.post('/generate-excel', async (req, res) => {
     // ===== 导出 =====
     const buffer = await workbook.xlsx.writeBuffer();
 
-    res.setHeader('Content-Type',        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="record.xlsx"');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="record.xlsx"'
+    );
+
     res.send(buffer);
 
   } catch (err) {

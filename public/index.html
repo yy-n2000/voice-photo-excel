@@ -188,42 +188,21 @@ function openDB() {
   });
 }
 
-// 1. 全新的压缩函数：使用 ObjectURL，拒绝内存暴涨
-function compressImage(file, maxSize = 1200, quality = 0.75) {
-  return new Promise((resolve, reject) => {
-    // 确保传入的是文件对象
-    if (!file || !file.type.startsWith('image/')) {
-      return reject(new Error('格式错误：非图片文件'));
-    }
-
+// 图片压缩：把 base64 缩小到最长边 1200px，质量 0.75，节省约 70-90% 空间
+function compressImage(dataUrl, maxSize = 1200, quality = 0.75) {
+  return new Promise((resolve) => {
     const img = new Image();
-    // 【核心修复】：创建一个指向底层文件的URL，完全不占用 JS 内存
-    const objectUrl = URL.createObjectURL(file);
-
     img.onload = () => {
-      // 图片加载后，立刻释放这个URL指针
-      URL.revokeObjectURL(objectUrl); 
-      
       const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
       const w = Math.round(img.width  * scale);
       const h = Math.round(img.height * scale);
-      
       const cvs = document.createElement('canvas');
-      cvs.width = w; 
-      cvs.height = h;
+      cvs.width = w; cvs.height = h;
       cvs.getContext('2d').drawImage(img, 0, 0, w, h);
-      
-      // 导出为极小的 Base64 (JPEG格式)
       resolve(cvs.toDataURL('image/jpeg', quality));
     };
-
-    img.onerror = (err) => {
-      URL.revokeObjectURL(objectUrl);
-      // 【核心修复】：如果手机端依然解析失败，直接报错拦截，绝对不能返回原图！
-      reject(new Error('图片解析失败'));
-    };
-
-    img.src = objectUrl;
+    img.onerror = () => resolve(dataUrl); // 失败就原样保留
+    img.src = dataUrl;
   });
 }
 
@@ -231,19 +210,12 @@ function compressImage(file, maxSize = 1200, quality = 0.75) {
 async function saveToStorage() {
   try {
     const idb = await openDB();
-
-    // 压缩当前 records 里的图片
-    const compressed = await Promise.all(records.map(async (row) => ({
-      ...row,
-      images: await Promise.all((row.images || []).map(img => compressImage(img)))
-    })));
-
     const tx    = idb.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
 
-    // 先清空旧数据，再逐行写入
     store.clear();
-    compressed.forEach((row, i) => store.put({ id: i, ...row }));
+    // 因为 currentImages 已经是压缩过的，records 里的也就已经是压缩过的了
+    records.forEach((row, i) => store.put({ id: i, ...row }));
 
     tx.oncomplete = () => {};
     tx.onerror    = (e) => console.error('IndexedDB 写入失败', e.target.error);
@@ -461,28 +433,23 @@ function addPhoto() {
   if(currentImages.length>=3){showToast('最多添加3张');return;}
   document.getElementById('fileInput').click();
 }
-// 2. 配合修改的选图逻辑
 async function handleFileSelect(e) {
-  const files = e.target.files;
-  if (!files || files.length === 0) return;
-
-  // 手机端处理可能需要一两秒，给用户一个提示
-  showToast('📸 正在压缩处理图片...');
-
-  for(const file of files){
-    if(currentImages.length >= 3) break;
+  for(const file of e.target.files){
+    if(currentImages.length>=3) break;
     
-    try {
-      // 【核心修复】：这里直接把 file 文件对象传给压缩函数，而不是 FileReader 读出来的字符串
-      const compressedDataUrl = await compressImage(file);
+    // 如果用户上传的不是图片，跳过
+    if (!file.type.startsWith('image/')) continue;
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      // 核心修复：在这里立刻调用 compressImage 压缩原图！
+      const compressedDataUrl = await compressImage(ev.target.result);
       currentImages.push(compressedDataUrl);
       renderPhotoGrid();
-    } catch(err) {
-      console.error(err);
-      showToast('❌ 某张图片处理失败，已跳过');
-    }
+    };
+    reader.readAsDataURL(file);
   }
-  e.target.value = ''; // 清空 input
+  e.target.value='';
 }
 function removePhoto(i){currentImages.splice(i,1);renderPhotoGrid();}
 
@@ -646,20 +613,18 @@ function clearAnnotations() { strokes=[]; redrawCanvas(); }
 function closeEditor() { document.getElementById('editorOverlay').classList.remove('show'); }
 
 function saveAnnotation() {
-  // 把canvas内容保存回currentImages，质量与 compressImage 保持一致
-  currentImages[editingIndex] = canvas.toDataURL('image/jpeg', 0.75);
+  // 把canvas内容保存回currentImages
+  currentImages[editingIndex] = canvas.toDataURL('image/jpeg', 0.92);
   closeEditor();
   renderPhotoGrid();
   showToast('标注已保存 ✅');
 }
 
 // ===================== 添加行 =====================
-async function addRow() {
+function addRow() {
   const text=document.getElementById('textDisplay').value.trim();
   if(!text&&currentImages.length===0){showToast('请先录音或添加图片');return;}
-  // 压缩后再存入 records，避免原始大图占用内存和发给服务器
-  const compressedImages = await Promise.all(currentImages.map(img => compressImage(img)));
-  records.push({text,images:compressedImages});
+  records.push({text,images:[...currentImages]});
   document.getElementById('textDisplay').value='';
   currentImages=[];
   renderPhotoGrid();
@@ -720,7 +685,6 @@ function showToast(msg){
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2500);
 }
-
 </script>
 <script>
   if ('serviceWorker' in navigator) {
